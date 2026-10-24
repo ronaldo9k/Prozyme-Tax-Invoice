@@ -2,412 +2,960 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>푸로찜 에스 · 세금계산서 컨트롤 타워</title>
+<meta name="description" content="노션 입출고 → 세금계산서 DB → 홈택스 엑셀양식까지 단계별 수량·금액 대사">
+<meta name="theme-color" content="#0B1B33">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
-:root{--c1:#1565C0;--c2:#1E88E5;--bg:#F3F6FB;--ok:#1B5E20;--okbg:#E8F5E9;--warn:#E65100;--warnbg:#FFF3E0;--err:#B71C1C;--errbg:#FFEBEE;--line:#D5DEEA}
-*{box-sizing:border-box;font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
-body{margin:0;background:var(--bg);color:#222;font-size:14px}
-header{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;padding:18px 22px}
-header h1{margin:0;font-size:20px}header p{margin:4px 0 0;font-size:12px;opacity:.85}
-.wrap{max-width:1180px;margin:0 auto;padding:16px}
-.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-label{display:block;font-size:12px;color:#556;margin-bottom:4px}
-select,input,button{font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px}
-button{cursor:pointer;border:0;font-weight:700}
-.btn-blue{background:var(--c2);color:#fff}.btn-green{background:#2E7D32;color:#fff}
-.btn-orange{background:#EF6C00;color:#fff}.btn-red{background:#C62828;color:#fff}
-.btn-gray{background:#607D8B;color:#fff}
-button:disabled{opacity:.5;cursor:not-allowed}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
-.kpi{border-radius:8px;padding:10px 12px;background:#EEF3FA;border:1px solid var(--line)}
-.kpi .t{font-size:11px;color:#556}.kpi .v{font-size:18px;font-weight:800;margin-top:2px}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
-.b-ok{background:var(--okbg);color:var(--ok)}.b-warn{background:var(--warnbg);color:var(--warn)}.b-err{background:var(--errbg);color:var(--err)}
-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
-th{background:var(--c2);color:#fff;padding:6px 8px;text-align:left;white-space:nowrap}
-td{border-bottom:1px solid var(--line);padding:6px 8px}
-tr:nth-child(even) td{background:#F7FAFD}
-.tblwrap{overflow-x:auto}
-h2{font-size:15px;margin:0 0 8px;border-left:4px solid var(--c2);padding-left:8px}
-h3{font-size:13px;margin:14px 0 4px}
-#log{background:#0F172A;color:#A5F3A5;font-family:Consolas,monospace;font-size:12px;border-radius:8px;padding:12px;max-height:180px;overflow-y:auto;white-space:pre-wrap}
-.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
-.fstep{border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;background:#FAFCFF}
-.fstep .s{font-size:11px;color:#556}.fstep .n{font-weight:800;font-size:15px}.fstep .a{font-size:11px;color:#888}
-.exgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
-.note{font-size:12px;color:#667;background:#FFF8E1;border:1px dashed #E6C200;border-radius:6px;padding:8px;margin-top:8px}
-.hidden{display:none}
+:root{
+  --navy:#0B1B33; --navy-2:#12294A; --ink:#0F172A; --ink-2:#334155; --ink-3:#64748B;
+  --line:#E2E8F0; --line-2:#CBD5E1; --bg:#F5F7FB; --card:#FFFFFF;
+  --brand:#1E5EFF; --brand-2:#3B82F6; --brand-ink:#1D4ED8;
+  --ok:#0F7A3D; --ok-bg:#E9F7EF; --ok-line:#A7E0BF;
+  --warn:#B45309; --warn-bg:#FFF7E8; --warn-line:#F2CF8B;
+  --err:#B3261E; --err-bg:#FDECEA; --err-line:#F3B7B1;
+  --radius:14px; --radius-sm:10px;
+  --shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+  --shadow-lg:0 2px 4px rgba(15,23,42,.06), 0 18px 40px rgba(15,23,42,.10);
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  background:var(--bg); color:var(--ink); font-size:14px; line-height:1.55;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.01em;
+}
+/* ── 배경 이미지 (bg.jpg 를 같은 폴더에 넣으면 자동 적용, 없으면 무시됨) ── */
+body::before{
+  content:""; position:fixed; inset:0; z-index:-2; pointer-events:none;
+  background:url("bg.jpg") center/cover no-repeat fixed;
+  opacity:.10; filter:saturate(.9);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(1200px 420px at 12% -8%, rgba(30,94,255,.10), transparent 60%),
+    radial-gradient(900px 380px at 92% 4%, rgba(16,185,129,.07), transparent 62%),
+    linear-gradient(180deg, rgba(245,247,251,.55), rgba(245,247,251,.92));
+}
+/* ── 헤더 ── */
+.hero{
+  position:relative; overflow:hidden; color:#fff;
+  background:linear-gradient(135deg,#08152B 0%,#0F2A4F 55%,#123A66 100%);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.hero-bg{position:absolute; inset:0; background:url("bg.jpg") center/cover no-repeat; opacity:.20; mix-blend-mode:luminosity}
+.hero-veil{position:absolute; inset:0; background:linear-gradient(180deg,rgba(8,21,43,.35),rgba(8,21,43,.82))}
+.hero-in{position:relative; max-width:1240px; margin:0 auto; padding:20px 22px 22px;
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:13px; min-width:0}
+.brand-logo{height:44px; width:auto; max-width:190px; object-fit:contain; display:block}
+.brand-mark{
+  width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
+  background:linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.28); font-weight:800; font-size:16px; letter-spacing:-.02em;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+}
+.brand-txt{min-width:0}
+.brand-txt h1{margin:0; font-size:18.5px; font-weight:750; letter-spacing:-.025em; white-space:nowrap}
+.brand-txt p{margin:2px 0 0; font-size:11.5px; color:#A9C0DC; letter-spacing:.01em}
+.hero-right{margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.month-box{
+  display:flex; align-items:center; gap:8px; padding:7px 8px 7px 12px;
+  background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.18);
+  border-radius:11px; backdrop-filter:blur(8px);
+}
+.month-box label{font-size:11px; color:#BBD0E8; letter-spacing:.02em}
+.month-box select{
+  background:transparent; border:0; color:#fff; font-size:14px; font-weight:700;
+  font-family:inherit; outline:none; padding:2px 4px; cursor:pointer;
+}
+.month-box select option{color:#0F172A}
+.live{display:flex; align-items:center; gap:7px; font-size:11.5px; color:#BBD0E8;
+  padding:8px 12px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.05)}
+.dot{width:7px; height:7px; border-radius:50%; background:#38E08B; box-shadow:0 0 0 3px rgba(56,224,139,.18)}
+/* ── 레이아웃 ── */
+.wrap{max-width:1240px; margin:0 auto; padding:20px 22px 64px}
+.step{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden;
+  animation:rise .34s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes rise{from{opacity:0; transform:translateY(7px)}to{opacity:1; transform:none}}
+.step-hd{display:flex; align-items:center; gap:12px; padding:15px 20px; border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#FCFDFF,#F8FAFD)}
+.step-no{
+  flex:0 0 auto; width:30px; height:30px; border-radius:9px; display:grid; place-items:center;
+  font-size:13px; font-weight:800; color:#fff; font-family:var(--mono);
+  background:linear-gradient(150deg,var(--navy-2),#1B3F6E); box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+}
+.step-no.brand{background:linear-gradient(150deg,var(--brand),var(--brand-2))}
+.step-tt{flex:1 1 auto; min-width:0}
+.step-tt h2{margin:0; font-size:15px; font-weight:740; letter-spacing:-.02em}
+.step-tt p{margin:2px 0 0; font-size:12px; color:var(--ink-3)}
+.step-bd{padding:18px 20px}
+.actions{display:flex; gap:9px; flex-wrap:wrap; align-items:center}
+.hint{font-size:12px; color:var(--ink-3); margin:12px 0 0; line-height:1.6}
+/* ── 버튼 ── */
+.btn{
+  -webkit-appearance:none; appearance:none; border:1px solid transparent; cursor:pointer;
+  font-family:inherit; font-size:13px; font-weight:700; letter-spacing:-.01em;
+  padding:10px 17px; border-radius:10px; display:inline-flex; align-items:center; gap:7px;
+  transition:transform .14s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+  white-space:nowrap;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.55; cursor:progress; transform:none!important; box-shadow:none!important}
+.btn-primary{
+  color:#fff; background:linear-gradient(135deg,#1E5EFF,#3B82F6 58%,#2E7BF6);
+  box-shadow:0 1px 2px rgba(30,94,255,.28), 0 10px 22px -8px rgba(30,94,255,.55);
+  border-color:rgba(255,255,255,.14);
+}
+.btn-primary:hover:not(:disabled){transform:translateY(-1px); box-shadow:0 2px 4px rgba(30,94,255,.30), 0 16px 30px -10px rgba(30,94,255,.62)}
+.btn-dark{
+  color:#fff; background:linear-gradient(150deg,#0F2A4F,#1B3F6E);
+  box-shadow:0 1px 2px rgba(11,27,51,.3), 0 10px 22px -10px rgba(11,27,51,.6);
+  border-color:rgba(255,255,255,.10);
+}
+.btn-dark:hover:not(:disabled){transform:translateY(-1px)}
+.btn-ghost{
+  color:var(--ink-2); background:#fff; border-color:var(--line-2);
+  box-shadow:0 1px 1px rgba(15,23,42,.03);
+}
+.btn-ghost:hover:not(:disabled){background:#F7FAFF; border-color:#A9BFE0; color:var(--brand-ink)}
+.btn-quiet{color:var(--ink-3); background:transparent; border-color:transparent; padding:8px 11px; font-weight:600}
+.btn-quiet:hover:not(:disabled){background:#EEF3FA; color:var(--ink)}
+.btn-danger{color:var(--err); background:#fff; border-color:var(--err-line)}
+.btn-danger:hover:not(:disabled){background:var(--err-bg)}
+.btn-sm{padding:6px 11px; font-size:12px; border-radius:8px}
+/* ── KPI ── */
+.kpis{display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin:0 0 4px}
+.kpi{
+  border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px 13px;
+  background:linear-gradient(180deg,#fff,#FBFCFE); position:relative; overflow:hidden;
+}
+.kpi::before{content:""; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--line-2)}
+.kpi.ok::before{background:var(--ok)} .kpi.warn::before{background:#E8A33D} .kpi.err::before{background:var(--err)}
+.kpi .t{font-size:11px; color:var(--ink-3); letter-spacing:.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.kpi .v{font-size:17px; font-weight:770; letter-spacing:-.03em; margin-top:3px; font-variant-numeric:tabular-nums}
+.kpi.ok .v{color:var(--ok)} .kpi.warn .v{color:var(--warn)} .kpi.err .v{color:var(--err)}
+.kpi .u{font-size:11px; font-weight:600; color:var(--ink-3); margin-left:2px}
+/* ── 흐름 스트립 ── */
+.flow{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:0; margin:2px 0 14px;
+  border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff}
+.fstep{padding:12px 14px; border-right:1px solid var(--line); position:relative}
+.fstep:last-child{border-right:0}
+.fstep .s{font-size:10.5px; color:var(--ink-3); font-weight:700; letter-spacing:.03em}
+.fstep .n{font-size:16px; font-weight:780; letter-spacing:-.03em; margin-top:2px; font-variant-numeric:tabular-nums}
+.fstep .a{font-size:11px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.fstep::after{content:"›"; position:absolute; right:-6px; top:50%; transform:translateY(-50%);
+  color:var(--line-2); font-size:15px; font-weight:700; background:#fff; z-index:2}
+.fstep:last-child::after{display:none}
+/* ── 표 ── */
+.tblwrap{border:1px solid var(--line); border-radius:11px; overflow:auto; max-height:430px; margin-top:4px; background:#fff}
+table{width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px}
+thead th{
+  position:sticky; top:0; z-index:2; text-align:left; font-weight:700; font-size:11.5px;
+  color:var(--ink-2); background:#F1F5FA; padding:9px 11px; border-bottom:1px solid var(--line);
+  white-space:nowrap; letter-spacing:.01em;
+}
+tbody td{padding:8px 11px; border-bottom:1px solid #F1F4F9; vertical-align:middle; white-space:nowrap}
+tbody tr:nth-child(even){background:#FCFDFF}
+tbody tr:hover{background:#F4F8FF}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); font-size:12px}
+td.mid{max-width:320px; overflow:hidden; text-overflow:ellipsis}
+.empty{padding:26px; text-align:center; color:var(--ink-3); font-size:12.5px}
+/* ── 배지 ── */
+.badge{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700;
+  padding:3px 8px; border-radius:999px; border:1px solid transparent; white-space:nowrap; letter-spacing:-.01em}
+.b-ok{color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line)}
+.b-warn{color:var(--warn); background:var(--warn-bg); border-color:var(--warn-line)}
+.b-err{color:var(--err); background:var(--err-bg); border-color:var(--err-line)}
+.b-neutral{color:var(--ink-2); background:#EEF2F8; border-color:#DCE4EF}
+/* ── 노트/경보 ── */
+.note{margin-top:12px; padding:12px 14px; border-radius:10px; font-size:12.5px; line-height:1.65;
+  border:1px solid var(--line); background:#FAFCFF; color:var(--ink-2)}
+.note.ok{background:var(--ok-bg); border-color:var(--ok-line); color:#0B5C2E}
+.note.warn{background:var(--warn-bg); border-color:var(--warn-line); color:#7C3D06}
+.note.err{background:var(--err-bg); border-color:var(--err-line); color:#8C1D18}
+.note b{font-weight:750}
+.note ul{margin:7px 0 0; padding-left:17px}
+.note li{margin:3px 0}
+/* ── 예외 입력 폼 ── */
+.form{display:grid; grid-template-columns:1.1fr 1.4fr 1.2fr .9fr .9fr 1.6fr auto; gap:9px; align-items:end}
+.field label{display:block; font-size:11px; color:var(--ink-3); margin-bottom:4px; font-weight:600; letter-spacing:.01em}
+.field input,.field select{
+  width:100%; padding:9px 11px; font-family:inherit; font-size:13px; color:var(--ink);
+  border:1px solid var(--line-2); border-radius:9px; background:#fff; outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.field input:focus,.field select:focus{border-color:var(--brand-2); box-shadow:0 0 0 3px rgba(59,130,246,.14)}
+.field input::placeholder{color:#A3B1C6}
+/* ── 로그 ── */
+.logbox{margin-top:16px; border:1px solid #1E3350; border-radius:var(--radius); overflow:hidden; background:#08152B; box-shadow:var(--shadow)}
+.loghd{display:flex; align-items:center; gap:8px; padding:9px 14px; background:#0D2140; border-bottom:1px solid #1E3350}
+.loghd span{font-size:11.5px; color:#9FB6D4; font-weight:700; letter-spacing:.03em}
+.loghd .sp{margin-left:auto}
+.log{font-family:var(--mono); font-size:11.5px; line-height:1.75; color:#C6D6EA; padding:11px 14px;
+  max-height:200px; overflow:auto; white-space:pre-wrap; word-break:break-word; margin:0}
+.log .ok{color:#6EE7A8} .log .er{color:#FF9C93} .log .t{color:#5F7FA6}
+/* ── 토스트/모달 ── */
+#toaster{position:fixed; right:16px; bottom:16px; z-index:80; display:flex; flex-direction:column; gap:8px; max-width:min(420px,92vw)}
+.toast{background:#0B1B33; color:#EAF1FA; border:1px solid #233D63; border-radius:11px; padding:11px 14px;
+  font-size:12.5px; box-shadow:var(--shadow-lg); animation:tin .22s ease both; line-height:1.5}
+.toast.ok{border-color:#1E6B45; background:#0C2E22}
+.toast.err{border-color:#8C2B24; background:#2B110F}
+@keyframes tin{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+#modal{position:fixed; inset:0; z-index:90; display:none; place-items:center; padding:18px;
+  background:rgba(8,21,43,.52); backdrop-filter:blur(3px)}
+#modal.on{display:grid}
+.sheet{background:#fff; border-radius:16px; box-shadow:var(--shadow-lg); width:min(480px,100%); overflow:hidden;
+  animation:sin .24s cubic-bezier(.2,.8,.3,1) both}
+@keyframes sin{from{opacity:0; transform:translateY(10px) scale(.985)}to{opacity:1; transform:none}}
+.sheet-hd{padding:16px 20px 0}
+.sheet-hd h3{margin:0; font-size:15.5px; font-weight:760; letter-spacing:-.02em}
+.sheet-bd{padding:9px 20px 4px; font-size:13px; color:var(--ink-2); line-height:1.65; white-space:pre-line}
+.sheet-ft{padding:14px 20px 18px; display:flex; gap:9px; justify-content:flex-end}
+.foot{margin-top:22px; text-align:center; font-size:11px; color:#93A3B8; line-height:1.8}
+/* ── 반응형 ── */
+@media (max-width:1080px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fstep::after{display:none}
+  .fstep{border-bottom:1px solid var(--line)}
+  .form{grid-template-columns:1fr 1fr 1fr}
+}
+@media (max-width:640px){
+  .hero-in{padding:15px 15px 17px; gap:12px}
+  .brand-txt h1{font-size:16px; white-space:normal}
+  .brand-logo{height:34px}
+  .hero-right{width:100%; margin-left:0}
+  .month-box{flex:1 1 auto}
+  .wrap{padding:14px 13px 48px}
+  .step-bd{padding:14px 14px 16px}
+  .step-hd{padding:13px 14px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .form{grid-template-columns:1fr}
+  .btn{padding:9px 14px}
+  .actions .btn{flex:1 1 auto; justify-content:center}
+}
+@media print{
+  .hero{position:static} .actions,.logbox,#toaster,.btn{display:none!important}
+  .step{break-inside:avoid; box-shadow:none} .tblwrap{max-height:none}
+}
 </style>
 </head>
 <body>
-<header>
-  <h1>🧾 푸로찜 에스 · 세금계산서 컨트롤 타워</h1>
-  <p>① 원본 스냅샷 → ② 계산서DB 연동 → ③ 거래처별 집계·엑셀양식 → ④ 예외처리·최종 검증 (모든 단계 숫자 대사)</p>
+
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-veil"></div>
+  <div class="hero-in">
+    <div class="brand">
+      <!-- 상단 회사 로고 (logo.png). 없으면 텍스트 마크로 자동 대체 -->
+      <img class="brand-logo" src="logo.png" alt="회사 로고" onerror="this.style.display='none';document.getElementById('mark').style.display='grid';">
+      <div class="brand-mark" id="mark" style="display:none">PZ</div>
+      <div class="brand-txt">
+        <h1>세금계산서 컨트롤 타워</h1>
+        <p>노션 입출고 → 세금계산서 DB → 홈택스 엑셀양식 · 단계별 대사</p>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="month-box">
+        <label for="month">집계월</label>
+        <select id="month"></select>
+      </div>
+      <div class="live"><span class="dot"></span><span id="conn">연결 대기</span></div>
+    </div>
+  </div>
 </header>
-<div class="wrap">
 
-  <div class="card">
-    <div class="row">
-      <div><label>집계월</label><select id="month"></select></div>
-      <button class="btn-blue" id="btnSnapshot">0️⃣ 원본 스냅샷 조회</button>
-      <button class="btn-gray" id="btnS1Prev">1단계 미리보기</button>
-      <button class="btn-green" id="btnS1Run">1단계 실행 (입출고→계산서DB)</button>
-      <button class="btn-gray" id="btnS2Prev">2단계 미리보기</button>
-      <button class="btn-green" id="btnS2Run">2단계 실행 (집계→엑셀양식)</button>
-      <button class="btn-orange" id="btnS3">3단계 예외반영·최종검증·엑셀확정</button>
+<main class="wrap">
+
+  <!-- 0단계 -->
+  <section class="step">
+    <div class="step-hd">
+      <div class="step-no brand">0</div>
+      <div class="step-tt">
+        <h2>원본 스냅샷 <span class="badge b-neutral">기준치 확정</span></h2>
+        <p>입출고 DB에서 이 집계월의 페이지·고유 거래처·박스·금액을 고정합니다. 이후 모든 단계는 이 숫자와 대사됩니다.</p>
+      </div>
     </div>
-    <div id="log" style="margin-top:10px">준비 완료. 집계월을 선택하고 버튼을 누르세요.</div>
-  </div>
-
-  <div class="card" id="kpiCard">
-    <h2>📊 대상 현황 (선택 집계월)</h2>
-    <div class="kpis" id="kpis">
-      <div class="kpi"><div class="t">원본 페이지 수</div><div class="v" id="kSrcP">-</div></div>
-      <div class="kpi"><div class="t">고유 거래처 수</div><div class="v" id="kSrcC">-</div></div>
-      <div class="kpi"><div class="t">원본 총수량</div><div class="v" id="kSrcQ">-</div></div>
-      <div class="kpi"><div class="t">원본 총금액</div><div class="v" id="kSrcA">-</div></div>
-      <div class="kpi"><div class="t">집계월 누락의심</div><div class="v" id="kAggr">-</div></div>
-      <div class="kpi"><div class="t">검증 결과</div><div class="v" id="kVerdict">-</div></div>
+    <div class="step-bd">
+      <div class="actions">
+        <button class="btn btn-primary" id="btnSnap">스냅샷 조회</button>
+        <button class="btn btn-ghost" id="btnS1All">1단계까지 한 번에 검사</button>
+      </div>
+      <div id="snapOut" style="margin-top:14px"></div>
     </div>
-    <div class="note">💡 "집계월 누락의심" = 납품일자는 이번 달인데 노션 <b>집계월 수식</b>이 당월로 계산되지 않은 페이지. <b>수창 누락 사례의 가장 유력한 원인</b>이므로 반드시 0이어야 합니다. 0이 아니면 납품일자를 먼저 확인하세요.</div>
-  </div>
+  </section>
 
-  <div class="card hidden" id="cardSrc">
-    <h2>📄 원본 페이지 목록 (입출고 DB)</h2>
-    <div class="tblwrap"><table id="tblSrc"><thead><tr>
-      <th>거래처</th><th>납품일자</th><th>제품/페이지</th><th>수량</th><th>판매금</th><th>출고</th><th>계산서발행</th><th>처리중</th><th>발행완료</th><th>상태판정</th>
-    </tr></thead><tbody></tbody></table></div>
-  </div>
-
-  <div class="card hidden" id="cardS1">
-    <h2>1️⃣ 단계 결과 — 입출고 → 세금계산서 DB</h2>
-    <div id="s1Summary"></div>
-    <div class="kpis" id="s1Kpis"></div>
-    <div id="s1Problems"></div>
-    <div class="tblwrap"><table id="tblS1"><thead><tr>
-      <th>거래처</th><th>납품일자</th><th>제품/페이지</th><th>수량</th><th>금액</th><th>처리결과</th><th>오류</th><th>열기</th>
-    </tr></thead><tbody></tbody></table></div>
-  </div>
-
-  <div class="card hidden" id="cardS2">
-    <h2>2️⃣ 단계 결과 — 거래처별 집계 → 홈택스 엑셀양식</h2>
-    <div id="s2Summary"></div>
-    <div class="kpis" id="s2Kpis"></div>
-    <div id="s2Problems"></div>
-    <div class="tblwrap"><table id="tblS2"><thead><tr>
-      <th>사업자번호</th><th>거래처</th><th>사업장명</th><th>납품건수</th><th>수량합</th><th>공급가액합</th><th>세액합</th><th>합계</th><th>페이지별검증</th>
-    </tr></thead><tbody></tbody></table></div>
-    <h3>🚫 사업자번호 미등록 (엑셀 제외, 원본 금액은 보존)</h3>
-    <div class="tblwrap"><table id="tblS2NB"><thead><tr>
-      <th>거래처</th><th>납품일자</th><th>수량</th><th>금액</th><th>페이지</th>
-    </tr></thead><tbody></tbody></table></div>
-  </div>
-
-  <div class="card hidden" id="cardEx">
-    <h2>✏️ 3단계 예외 입력 (이번 달 발행 제외 / 수정)</h2>
-    <div class="row">
-      <div><label>예외 유형</label>
-        <select id="exType">
-          <option value="EXCLUDE_CLIENT">거래처 전체 발행 제외</option>
-          <option value="EXCLUDE_PAGE">특정 납품건만 제외</option>
-          <option value="SET_QTY">거래처 수량 수정</option>
-          <option value="SET_AMOUNT">거래처 총금액 수정(공급가액/세액 재계산)</option>
-        </select></div>
-      <div><label>거래처명</label><input id="exClient" placeholder="예: 수창"></div>
-      <div class="hidden" id="exPageWrap"><label>대상 페이지 ID</label><input id="exPage" placeholder="1단계/2단계 표의 페이지ID 복사"></div>
-      <div class="hidden" id="exNumWrap"><label>값 (수량 또는 총금액)</label><input id="exNum" type="number"></div>
-      <div style="flex:1"><label>사유</label><input id="exReason" placeholder="예: 거래처 요청으로 이번 달 미발행"></div>
-      <button class="btn-red" id="btnExSave">예외 등록</button>
+  <!-- 1단계 -->
+  <section class="step">
+    <div class="step-hd">
+      <div class="step-no">1</div>
+      <div class="step-tt">
+        <h2>노션 세금계산서 DB 자동화 <span class="badge b-neutral">수창 사고 지점</span></h2>
+        <p>입출고 페이지 → 세금계산서 DB 페이지 생성 + 3개 체크박스(계산서발행·처리중·발행완료) 상태를 숫자로 검증합니다.</p>
+      </div>
     </div>
-    <div class="tblwrap"><table id="tblEx"><thead><tr>
-      <th>유형</th><th>거래처</th><th>대상페이지</th><th>값</th><th>사유</th><th>상태</th><th>삭제</th>
-    </tr></thead><tbody></tbody></table></div>
-  </div>
-
-  <div class="card hidden" id="cardS3">
-    <h2>3️⃣ 최종 확정 — 원본↔계산서DB↔최종행 전체 대사</h2>
-    <div id="s3Summary"></div>
-    <div class="flow" id="s3Flow"></div>
-    <div id="s3Problems"></div>
-    <div class="tblwrap"><table id="tblS3"><thead><tr>
-      <th>사업자번호</th><th>거래처</th><th>사업장명</th><th>대표자</th><th>수량</th><th>공급가액</th><th>세액</th><th>합계</th><th>계산방식</th><th>적용예외</th>
-    </tr></thead><tbody></tbody></table></div>
-    <div class="row" style="margin-top:10px">
-      <button class="btn-green" id="btnDownload">⬇️ 홈택스 업로드용 CSV 내려받기</button>
-      <span class="note" style="margin-top:0">CSV 내려받기 후 엑셀에서 열어 "엑셀업로드양식"과 동일 내용인지 눈으로 한 번 더 확인하세요.</span>
+    <div class="step-bd">
+      <div class="actions">
+        <button class="btn btn-ghost" id="btnS1Prev">미리보기 (변경 없음)</button>
+        <button class="btn btn-primary" id="btnS1Run">1단계 실행</button>
+      </div>
+      <div id="s1Out" style="margin-top:14px"></div>
     </div>
-    <div id="verdictBox" style="margin-top:10px"></div>
+  </section>
+
+  <!-- 2단계 -->
+  <section class="step">
+    <div class="step-hd">
+      <div class="step-no">2</div>
+      <div class="step-tt">
+        <h2>홈택스 엑셀양식 자동화 <span class="badge b-neutral">거래처 취합·합산</span></h2>
+        <p>동일 거래처 1행 취합 + 수량·금액 합산. 입력 합계 = 집계 합계 + 사업자번호없음 합계를 강제 대사합니다.</p>
+      </div>
+    </div>
+    <div class="step-bd">
+      <div class="actions">
+        <button class="btn btn-ghost" id="btnS2Prev">미리보기 (변경 없음)</button>
+        <button class="btn btn-primary" id="btnS2Run">2단계 실행 (시트 기록)</button>
+      </div>
+      <div id="s2Out" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- 예외 -->
+  <section class="step">
+    <div class="step-hd">
+      <div class="step-no">E</div>
+      <div class="step-tt">
+        <h2>예외 처리 <span class="badge b-neutral">삭제·수정</span></h2>
+        <p>이번 달 발행에서 빼거나 수량·금액을 바꿀 건을 등록합니다. 3단계에서 자동 반영되고 "월별 이슈사항" 시트에도 기록됩니다.</p>
+      </div>
+    </div>
+    <div class="step-bd">
+      <div class="form">
+        <div class="field">
+          <label for="exType">유형</label>
+          <select id="exType">
+            <option value="EXCLUDE_CLIENT">거래처 전체 제외</option>
+            <option value="EXCLUDE_PAGE">납품건 1건 제외</option>
+            <option value="SET_QTY">수량 수정</option>
+            <option value="SET_AMOUNT">금액 수정</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="exClient">거래처명</label>
+          <input id="exClient" placeholder="예: 수창">
+        </div>
+        <div class="field">
+          <label for="exPage">납품건 ID (선택)</label>
+          <input id="exPage" placeholder="노션 페이지 ID 또는 원본입출고ID">
+        </div>
+        <div class="field">
+          <label for="exNum">값 (수량/금액)</label>
+          <input id="exNum" type="number" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="exReason">사유</label>
+          <input id="exReason" placeholder="업체 요청 등">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn btn-primary" id="btnExSave" style="width:100%;justify-content:center">예외 등록</button>
+        </div>
+      </div>
+      <div id="exOut" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- 3단계 -->
+  <section class="step">
+    <div class="step-hd">
+      <div class="step-no">3</div>
+      <div class="step-tt">
+        <h2>최종 확정 · 단계별 대사 <span class="badge b-neutral">발행 직전 게이트</span></h2>
+        <p>원본 → 연동 → 사업자번호없음 → 예외 → 최종 행. 설명불명 차액이 0일 때만 파일 확정이 가능합니다.</p>
+      </div>
+    </div>
+    <div class="step-bd">
+      <div class="actions">
+        <button class="btn btn-dark" id="btnS3">최종 확정 + 시트 기록</button>
+        <button class="btn btn-ghost" id="btnDl">엑셀양식 CSV 내려받기</button>
+      </div>
+      <div id="s3Out" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <div class="logbox">
+    <div class="loghd">
+      <span>실행 로그</span>
+      <span class="sp"></span>
+      <button class="btn btn-quiet btn-sm" id="btnLogClear" style="color:#9FB6D4">지우기</button>
+    </div>
+    <pre class="log" id="log"></pre>
   </div>
 
+  <p class="foot">
+    푸로찜 에스 · 세금계산서 컨트롤 타워 v2.1<br>
+    모든 단계는 노션 상태를 실제로 변경할 수 있습니다. 실행 전 미리보기로 숫자를 먼저 확인하세요.
+  </p>
+</main>
+
+<div id="toaster"></div>
+<div id="modal">
+  <div class="sheet">
+    <div class="sheet-hd"><h3 id="mTitle">확인</h3></div>
+    <div class="sheet-bd" id="mBody"></div>
+    <div class="sheet-ft">
+      <button class="btn btn-ghost" id="mNo">취소</button>
+      <button class="btn btn-primary" id="mYes">실행</button>
+    </div>
+  </div>
 </div>
 
 <script>
 /* =====================================================================
- * 설정: 배포한 웹앱 URL을 여기에 넣으세요 (배포 안내는 매뉴얼 참고)
- * 예: const WEBAPP_URL = 'https://script.google.com/macros/s/AKfy.../exec';
+ * ① 배포한 GAS 웹앱 URL (반드시 /exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx7EJRt61fWJE9sgbJstCnS-b4FKB8Ao2NWX4UE27ZWcGGhnHg4TCk72wQ9bec--FVH/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyPSsvujSPZfthntBDi09fVaKX8onmlB411XGAGrhMvo_Ym1ReVKOy7G06EQM7SgH0H/exec';
+const TIMEOUT_MS = 180000;   // GAS는 6분 제한 → 여유있게
 
-const $ = id => document.getElementById(id);
-const won = n => (Math.round(Number(n)||0)).toLocaleString('ko-KR') + '원';
+const $ = function (id) { return document.getElementById(id); };
+const won = function (n) {
+  if (n === null || n === undefined || n === '') return '-';
+  return (Math.round(Number(n) || 0)).toLocaleString('ko-KR') + '원';
+};
+const num = function (n) {
+  if (n === null || n === undefined || n === '') return '-';
+  return (Math.round(Number(n) || 0)).toLocaleString('ko-KR');
+};
+const esc = function (s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+};
+const badge = function (text, type) { return '<span class="badge b-' + type + '">' + esc(text) + '</span>'; };
 
-/* 웹앱 호출: POST를 text/plain으로 보내 CORS 사전요청(preflight) 회피 */
-async function api(action, extra){
-  const body = Object.assign({action:action}, extra||{});
-  const res = await fetch(WEBAPP_URL, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body: JSON.stringify(body)
+/* ---------------- 토스트 / 모달 ---------------- */
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type || '');
+  el.textContent = msg;
+  $('toaster').appendChild(el);
+  setTimeout(function () { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 4200);
+  setTimeout(function () { el.remove(); }, 4600);
+}
+function confirmBox(title, body, yesLabel) {
+  return new Promise(function (resolve) {
+    $('mTitle').textContent = title;
+    $('mBody').textContent = body;
+    $('mYes').textContent = yesLabel || '실행';
+    $('modal').classList.add('on');
+    function done(v) {
+      $('modal').classList.remove('on');
+      $('mYes').onclick = null; $('mNo').onclick = null;
+      resolve(v);
+    }
+    $('mYes').onclick = function () { done(true); };
+    $('mNo').onclick = function () { done(false); };
   });
-  const j = await res.json();
-  if(!j.ok) throw new Error(j.error || '알 수 없는 오류');
-  return j;
 }
-function log(msg){
-  const t = new Date().toLocaleTimeString('ko-KR');
-  $('log').textContent = '[' + t + '] ' + msg + '\n' + $('log').textContent;
-}
-function busy(btn, on, label){
-  btn.disabled = on;
-  if(on){ btn.dataset.old = btn.textContent; btn.textContent = '⏳ 실행 중...'; }
-  else btn.textContent = btn.dataset.old || label || btn.textContent;
-}
-function badge(text, type){ return '<span class="badge b-'+type+'">'+text+'</span>'; }
 
-/* ---------- 초기화: 집계월 목록 (최근 18개월) ---------- */
-(function(){
-  const now = new Date();
-  for(let i=0;i<18;i++){
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const m = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-    const opt = document.createElement('option');
-    opt.value = m; opt.textContent = m + (i===0 ? ' (이번 달)' : '');
-    $('month').appendChild(opt);
+/* ---------------- 로그 ---------------- */
+function log(msg, kind) {
+  const t = new Date().toLocaleTimeString('ko-KR', { hour12: false });
+  const cls = kind === 'ok' ? 'ok' : kind === 'err' ? 'er' : '';
+  const line = document.createElement('div');
+  line.innerHTML = '<span class="t">[' + t + ']</span> <span class="' + cls + '">' + esc(msg) + '</span>';
+  $('log').prepend(line);
+}
+
+/* ---------------- API (CORS 회피 + HTML 응답 방어) ---------------- */
+async function api(action, extra) {
+  const payload = Object.assign({ action: action }, extra || {});
+  const ctrl = new AbortController();
+  const timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(WEBAPP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+      redirect: 'follow'
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('응답 시간 초과(3분). 노션 페이지가 많으면 다시 시도하거나 집계월을 나눠 실행하세요.');
+    throw new Error('서버 연결 실패 — 웹앱 배포 상태를 확인하세요. (WEBAPP_URL이 /exec 인지, 액세스 권한이 "모든 사용자"인지)');
   }
+  clearTimeout(timer);
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    if (/<!DOCTYPE|<html/i.test(text)) {
+      throw new Error('웹앱이 JSON 대신 HTML(로그인/오류 페이지)을 반환했습니다.\n· 배포 → "모든 사용자" 선택 여부\n· WEBAPP_URL 끝이 /exec 인지\n· GAS에서 doPost가 실행되는지 확인하세요.');
+    }
+    throw new Error('응답 해석 실패: ' + text.slice(0, 180));
+  }
+  if (!json || json.ok !== true) throw new Error((json && json.error) || '알 수 없는 서버 오류');
+  return json;
+}
+
+/* ---------------- 버튼 상태 ---------------- */
+function busy(btn, on, label) {
+  if (on) {
+    btn.dataset.old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ 처리 중...';
+  } else {
+    btn.disabled = false;
+    btn.textContent = label || btn.dataset.old || btn.textContent;
+  }
+}
+
+/* ---------------- 집계월 목록 (최근 24개월) ---------------- */
+(function initMonths() {
+  const now = new Date();
+  const prev = localStorage.getItem('tower.month');
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const m = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const o = document.createElement('option');
+    o.value = m;
+    o.textContent = m + (i === 0 ? ' (이번 달)' : '');
+    $('month').appendChild(o);
+  }
+  if (prev) $('month').value = prev;
+  $('month').addEventListener('change', function () {
+    localStorage.setItem('tower.month', $('month').value);
+    log('집계월 변경 → ' + $('month').value);
+  });
 })();
 
-/* ---------- 공통 렌더링 ---------- */
-function renderKpis(data){
-  const t = data.totals || {};
-  $('kSrcP').textContent = t.pages != null ? t.pages : '-';
-  $('kSrcC').textContent = t.uniqueClients != null ? t.uniqueClients : '-';
-  $('kSrcQ').textContent = t.qty != null ? t.qty + '박스' : '-';
-  $('kSrcA').textContent = t.amount != null ? won(t.amount) : '-';
-  $('kAggr').textContent = t.aggrMissingCount != null ? t.aggrMissingCount + '건' : '-';
-  $('kAggr').style.color = t.aggrMissingCount > 0 ? 'var(--err)' : 'var(--ok)';
-  $('kVerdict').textContent = data.verdict || (t.aggrMissingCount ? '⚠️ 확인필요' : '준비');
+/* ---------------- 공통 렌더 ---------------- */
+function kpiGrid(items) {
+  return '<div class="kpis">' + items.map(function (i) {
+    const tone = i[2] ? ' ' + i[2] : '';
+    return '<div class="kpi' + tone + '"><div class="t">' + esc(i[0]) + '</div><div class="v">' + i[1] + '</div></div>';
+  }).join('') + '</div>';
 }
-function srcState(p){
-  if(!p.out) return badge('미출고(대상아님)','warn');
-  if(p.done) return badge('발행완료','ok');
-  if(p.processing) return badge('⚠️ 처리중 멈춤','err');
-  if(p.issue) return badge('실행대상','ok');
-  if(p.aggrMissing) return badge('🚨 집계월누락의심','err');
-  return badge('🚨 3체크모두해제(수창유형)','err');
-}
-function renderSrcTable(pages){
-  const tb = $('tblSrc').querySelector('tbody'); tb.innerHTML = '';
-  (pages||[]).forEach(p=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = '<td>'+p.client+'</td><td>'+p.date+'</td><td>'+p.title+'</td><td>'+p.qty+'</td><td>'+won(p.amount)+'</td>'
-      + '<td>'+(p.out?'✅':'-')+'</td><td>'+(p.issue?'☑':'☐')+'</td><td>'+(p.processing?'☑':'☐')+'</td><td>'+(p.done?'☑':'☐')+'</td><td>'+srcState(p)+'</td>';
-    tb.appendChild(tr);
-  });
-  $('cardSrc').classList.remove('hidden');
-}
-function s1Row(r){
-  const map = {'생성성공':'ok','이미생성_완료처리':'warn','실패':'err'};
-  return badge(r.result, map[r.result]||'warn');
+function table(cols, rows, emptyText) {
+  if (!rows || !rows.length) return '<div class="tblwrap"><div class="empty">' + esc(emptyText || '표시할 항목이 없습니다.') + '</div></div>';
+  return '<div class="tblwrap"><table><thead><tr>' +
+    cols.map(function (c) { return '<th class="' + (c.num ? 'num' : '') + '">' + esc(c.t) + '</th>'; }).join('') +
+    '</tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr>' + cols.map(function (c) {
+        return '<td class="' + (c.num ? 'num' : '') + (c.mid ? ' mid' : '') + '">' + (c.raw ? r[c.k] : esc(r[c.k])) + '</td>';
+      }).join('') + '</tr>';
+    }).join('') + '</tbody></table></div>';
 }
 
-/* ---------- 0단계 ---------- */
-$('btnSnapshot').onclick = async function(){
-  busy(this,true);
-  try{
-    const d = await api('snapshot',{month:$('month').value});
-    log('✅ 스냅샷: ' + d.summary);
-    renderKpis(d); renderSrcTable(d.pages);
-  }catch(e){ log('❌ ' + e.message); alert(e.message); }
-  busy(this,false);
+/* 원본 페이지 상태 배지 — 수창 유형(3체크 모두 해제)을 최우선으로 잡아냄 */
+function srcState(p) {
+  if (!p.out) return badge('미출고(대상아님)', 'neutral');
+  if (p.done) return badge('발행완료', 'ok');
+  if (p.processing) return badge('⚠ 처리중 멈춤', 'err');
+  if (p.issue) return badge('실행대상', 'ok');
+  if (p.aggrMissing) return badge('집계월 누락 의심', 'err');
+  return badge('🚨 3체크 모두 해제', 'err');
+}
+
+/* =====================================================================
+ * 0단계 — 스냅샷
+ * ===================================================================== */
+function renderSnapshot(d) {
+  const t = d.totals || {};
+  $('snapOut').innerHTML =
+    kpiGrid([
+      ['원본 페이지', num(t.pages) + '<span class="u">건</span>', ''],
+      ['고유 거래처', num(t.uniqueClients) + '<span class="u">곳</span>', ''],
+      ['총 수량', num(t.qty) + '<span class="u">박스</span>', ''],
+      ['총 금액', won(t.amount), ''],
+      ['집계월 누락 의심', num(t.aggrMissingCount) + '<span class="u">건</span>', t.aggrMissingCount > 0 ? 'err' : 'ok'],
+      ['스냅샷 ID', '<span style="font-size:12px">' + esc(d.runId || '-') + '</span>', '']
+    ]) +
+    '<div class="note' + (t.aggrMissingCount > 0 ? ' warn' : '') + '">' +
+      '<b>기준치 고정 완료.</b> ' + esc(d.summary || '') +
+      (t.aggrMissingCount > 0 ? '<br>· 집계월 값이 비어있거나 다른 페이지가 ' + t.aggrMissingCount + '건 있습니다. 납품일자/집계월 수식을 확인하세요.' : '') +
+    '</div>' +
+    table([
+      { t: '거래처', k: 'client' }, { t: '납품일자', k: 'date' }, { t: '품목/제목', k: 'title', mid: 1 },
+      { t: '수량', k: '_q', num: 1, raw: 1 }, { t: '판매금액', k: '_a', num: 1, raw: 1 },
+      { t: '출고', k: '_o', raw: 1 }, { t: '계산서발행', k: '_i', raw: 1 }, { t: '처리중', k: '_p', raw: 1 },
+      { t: '발행완료', k: '_d', raw: 1 }, { t: '판정', k: '_s', raw: 1 }
+    ], (d.pages || []).map(function (p) {
+      return {
+        client: p.client, date: p.date, title: p.title,
+        _q: num(p.qty), _a: won(p.amount),
+        _o: p.out ? '✅' : '—', _i: p.issue ? '☑' : '☐', _p: p.processing ? '☑' : '☐', _d: p.done ? '☑' : '☐',
+        _s: srcState(p)
+      };
+    }), '원본 페이지가 없습니다. 집계월을 확인하세요.');
+}
+
+$('btnSnap').onclick = async function () {
+  busy(this, true);
+  try {
+    const d = await api('snapshot', { month: $('month').value });
+    log('0단계 스냅샷: ' + d.summary, 'ok');
+    $('conn').textContent = '연결됨';
+    renderSnapshot(d);
+    STATE.snapshot = d;
+    renderFlow();
+    if (d.totals && d.totals.aggrMissingCount > 0) toast('집계월 누락 의심 ' + d.totals.aggrMissingCount + '건이 있습니다.', 'err');
+  } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+  busy(this, false, '스냅샷 조회');
 };
 
-/* ---------- 1단계 ---------- */
-function renderS1(d){
-  $('s1Summary').innerHTML = d.summary;
-  const c = d.counts, v = d.verification, b = d.bucketsAfter;
-  const items = [
-    ['생성', c.created,'ok'],['치유(이미생성)',c.healed,'warn'],['실패',c.failed,c.failed?'err':'ok'],
-    ['잔여 미체크(수창유형)',b.unchecked.length,b.unchecked.length?'err':'ok'],
-    ['처리중 멈춤',b.stuck.length,b.stuck.length?'err':'ok'],
-    ['판매금 누락',b.amountMissing.length,b.amountMissing.length?'warn':'ok'],
-    ['미연동 원본',d.recon.missingCount,d.recon.missingCount?'err':'ok'],
-    ['중복 생성',d.dupCount||0,(d.dupCount||0)?'err':'ok']
+/* =====================================================================
+ * 단계별 흐름 스트립 (요청 핵심: 처음 대비 단계별 수량 인지)
+ * ===================================================================== */
+const STATE = { snapshot: null, s1: null, s3: null };
+function renderFlow() {
+  const box = $('snapOut');
+  if (!STATE.snapshot) return;
+  const t = STATE.snapshot.totals || {};
+  const s1 = STATE.s1 && STATE.s1.recon ? STATE.s1.recon : null;
+  const s3 = STATE.s3 && STATE.s3.recon ? STATE.s3.recon : null;
+  const steps = [
+    { s: '① 입출고 원본', pages: t.pages, qty: t.qty, amount: t.amount },
+    { s: '② 세금계산서 DB 연동', pages: s1 ? s1.linkedPages : '—', qty: s1 ? s1.linkedQty : '—', amount: s1 ? s1.linkedAmount : '—' },
+    { s: '③ 사업자번호없음 제외', pages: s1 ? s1.missingCount : '—', qty: s1 ? s1.missingQty : '—', amount: s1 ? s1.missingAmount : '—' },
+    { s: '④ 예외 반영', pages: s3 ? (s3.excludedPages || 0) : '—', qty: s3 ? (s3.excludedQty || 0) : '—', amount: s3 ? (s3.excludedAmount || 0) : '—' },
+    { s: '⑤ 엑셀양식 최종', pages: s3 ? s3.finalPages : '—', qty: s3 ? s3.finalQty : '—', amount: s3 ? s3.finalAmount : '—' }
   ];
-  $('s1Kpis').innerHTML = items.map(i=>'<div class="kpi"><div class="t">'+i[0]+'</div><div class="v">'+i[1]+'건</div></div>').join('');
-  $('s1Problems').innerHTML = v.pass
-    ? badge('✅ 1단계 검증 통과','ok')
-    : '<div class="note">⚠️ <b>검증 경고</b><br>· ' + v.problems.join('<br>· ') + '<br>→ 문제 페이지를 아래 표(미리보기의 "미체크" 목록)에서 확인하고 조치하세요. 경고 메일도 발송되었습니다.</div>';
-  const tb = $('tblS1').querySelector('tbody'); tb.innerHTML='';
-  (d.results||[]).forEach(r=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML='<td>'+r.client+'</td><td>'+(r.date||'')+'</td><td>'+r.title+'</td><td>'+r.qty+'</td><td>'+won(r.amount)+'</td><td>'+s1Row(r)+'</td><td>'+(r.error||'')+'</td><td><a href="'+r.url+'" target="_blank">열기</a></td>';
-    tb.appendChild(tr);
-  });
-  $('cardS1').classList.remove('hidden');
+  const html = '<div class="flow">' + steps.map(function (f) {
+    return '<div class="fstep"><div class="s">' + esc(f.s) + '</div>' +
+      '<div class="n">' + (f.pages === '—' ? '—' : num(f.pages) + '건') + '</div>' +
+      '<div class="a">' + (f.qty === '—' ? '미실행' : num(f.qty) + '박스 · ' + won(f.amount)) + '</div></div>';
+  }).join('') + '</div>';
+  const old = box.querySelector('.flow');
+  if (old) old.outerHTML = html;
+  else box.insertAdjacentHTML('afterbegin', html);
 }
-$('btnS1Prev').onclick = async function(){
-  busy(this,true);
-  try{
-    const d = await api('stage1_preview',{month:$('month').value});
-    log('👁 1단계 미리보기: 실행대상 ' + d.buckets.ready.length + '건 / 미체크 ' + d.buckets.unchecked.length + '건 / 중복 ' + d.dupCount + '건');
-    renderKpis(d); renderSrcTable([].concat(d.buckets.ready,d.buckets.done,d.buckets.unchecked,d.buckets.stuck,d.buckets.amountMissing));
-    renderS1(Object.assign({}, d, {counts:{created:0,healed:0,failed:0},results:[],verification:{pass:d.buckets.unchecked.length===0&&d.dupCount===0,problems:d.buckets.unchecked.length?('미실행 대상 '+d.buckets.unchecked.length+'건 존재'):[]}}));
-  }catch(e){ log('❌ ' + e.message); alert(e.message); }
-  busy(this,false);
-};
-$('btnS1Run').onclick = async function(){
-  if(!confirm('1단계를 실행하면 노션 입출고 페이지의 체크박스 상태가 실제로 변경되고 세금계산서 DB에 페이지가 생성됩니다. 계속하시겠습니까?')) return;
-  busy(this,true);
-  try{
-    const d = await api('stage1_run',{month:$('month').value});
-    log('✅ 1단계 실행: ' + d.summary);
-    renderKpis({totals:d.recon ? {pages:d.recon.srcPages,uniqueClients:0,qty:d.recon.srcQty,amount:d.recon.srcAmount} : {}});
-    renderS1(d);
-  }catch(e){ log('❌ ' + e.message); alert(e.message); }
-  busy(this,false);
-};
 
-/* ---------- 2단계 ---------- */
-function renderS2(d){
-  $('s2Summary').innerHTML = d.summary + (d.execute ? ' / 엑셀양식 기록 행: ' + d.excel.rowCount + '행' : ' (미리보기 모드)');
-  const r = d.recon;
-  const items = [
-    ['입력 페이지', r.inputPages,''],['집계 행(거래처)', r.groupCount,'ok'],
-    ['사업자번호없음', r.noBizNoCount, r.noBizNoCount?'warn':'ok'],
-    ['설명불명 차액(수량)', r.diffQty, r.diffQty?'err':'ok'],
-    ['설명불명 차액(금액)', won(r.diffAmount), r.diffAmount?'err':'ok'],
-    ['페이지별 공급가액+세액 불일치', r.pageIssues.length, r.pageIssues.length?'err':'ok']
-  ];
-  $('s2Kpis').innerHTML = items.map(i=>'<div class="kpi"><div class="t">'+i[0]+'</div><div class="v">'+i[1]+'</div></div>').join('');
-  $('s2Problems').innerHTML = r.ok
-    ? badge('✅ 집계 대사 일치 (입력 = 집계 + 사업자번호없음)','ok')
-    : '<div class="note">⚠️ 차액이 있어요. 입력 합계 = 집계합계 + 사업자번호없음 합계가 되어야 합니다. 현재 차액: 수량 '+r.diffQty+' / '+won(r.diffAmount)+'</div>';
-  const tb = $('tblS2').querySelector('tbody'); tb.innerHTML='';
-  (d.groups||[]).forEach(g=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML='<td>'+g.bizNo+'</td><td>'+g.clientName+'</td><td>'+g.businessName+'</td><td>'+g.pageCount+'</td><td>'+g.qty+'</td><td>'+won(g.supply)+'</td><td>'+won(g.tax)+'</td><td>'+won(g.base)+'</td><td>'+(g.pageIssues.length?badge('불일치 '+g.pageIssues.length+'건','err'):badge('✅','ok'))+'</td>';
-    tb.appendChild(tr);
-  });
-  const tb2 = $('tblS2NB').querySelector('tbody'); tb2.innerHTML='';
-  (d.noBizNo||[]).forEach(t=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML='<td>'+t.client+'</td><td>'+t.date+'</td><td>'+t.qty+'</td><td>'+won(t.amount)+'</td><td><a href="'+t.url+'" target="_blank">열기</a></td>';
-    tb2.appendChild(tr);
-  });
-  $('cardS2').classList.remove('hidden');
-}
-$('btnS2Prev').onclick = async function(){
-  busy(this,true);
-  try{
-    const d = await api('stage2_preview',{month:$('month').value});
-    log('👁 2단계 미리보기: ' + d.summary);
-    renderS2(d);
-  }catch(e){ log('❌ ' + e.message); alert(e.message); }
-  busy(this,false);
-};
-$('btnS2Run').onclick = async function(){
-  if(!confirm('2단계를 실행하면 홈택스 엑셀양식 시트(7행 이하)가 새로 쓰여지고, 성공 페이지는 "전송완료"로 체크됩니다. 계속하시겠습니까?')) return;
-  busy(this,true);
-  try{
-    const d = await api('stage2_run',{month:$('month').value});
-    log('✅ 2단계 실행: ' + d.summary);
-    renderS2(d);
-  }catch(e){ log('❌ ' + e.message); alert(e.message); }
-  busy(this,false);
-};
+/* =====================================================================
+ * 1단계
+ * ===================================================================== */
+function srclite(p) { return p; }
+function renderStage1(d, isPreview) {
+  const c = d.counts || { created: 0, healed: 0, failed: 0 };
+  const b = d.bucketsAfter || { unchecked: [], stuck: [], amountMissing: [] };
+  const r = d.recon || {};
+  const v = d.verification || { pass: true, problems: [] };
+  let html = '<div class="note" style="background:#F8FAFF">' + esc(d.summary || (isPreview ? '미리보기 결과입니다.' : '실행 완료.')) + '</div>';
+  html += kpiGrid([
+    ['신규 생성', num(c.created) + '<span class="u">건</span>', 'ok'],
+    ['치유(이미생성)', num(c.healed) + '<span class="u">건</span>', c.healed ? 'warn' : ''],
+    ['생성 실패', num(c.failed) + '<span class="u">건</span>', c.failed ? 'err' : 'ok'],
+    ['잔여 3체크 해제', num((b.unchecked || []).length) + '<span class="u">건</span>', (b.unchecked || []).length ? 'err' : 'ok'],
+    ['미연동 원본', num(r.missingCount) + '<span class="u">건</span>', r.missingCount ? 'err' : 'ok'],
+    ['중복 생성 의심', num(d.dupCount || 0) + '<span class="u">건</span>', (d.dupCount || 0) ? 'err' : 'ok']
+  ]);
+  html += v.pass
+    ? '<div class="note ok"><b>✅ 1단계 검증 통과</b> — 원본 ' + num(r.srcPages) + '건 중 ' + num(r.linkedPages) + '건이 세금계산서 DB에 연결되었습니다.</div>'
+    : '<div class="note err"><b>⚠ 1단계 검증 경고</b><ul>' + (v.problems || []).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>아래 표의 “3체크 모두 해제” 행을 확인하세요. 원인 후보: 노션 버튼 미실행 / 트리거 미발동 / 사업자번호(등록번호) 미공유 / 노션 권한 만료.</div>';
 
-/* ---------- 예외 입력 ---------- */
-$('exType').onchange = function(){
-  $('exPageWrap').classList.toggle('hidden', this.value!=='EXCLUDE_PAGE');
-  $('exNumWrap').classList.toggle('hidden', !(this.value==='SET_QTY'||this.value==='SET_AMOUNT'));
-};
-const exTypeName = {EXCLUDE_CLIENT:'거래처 제외',EXCLUDE_PAGE:'납품건 제외',SET_QTY:'수량수정',SET_AMOUNT:'금액수정'};
-async function loadExceptions(){
-  try{
-    const d = await api('exceptions_list',{month:$('month').value});
-    const tb = $('tblEx').querySelector('tbody'); tb.innerHTML='';
-    d.exceptions.forEach(e=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML='<td>'+exTypeName[e.type]+'</td><td>'+e.clientName+'</td><td>'+(e.pageId||'-')+'</td><td>'+(e.type==='SET_QTY'?e.qty:(e.type==='SET_AMOUNT'?won(e.amount):'-'))+'</td><td>'+e.reason+'</td><td>'+badge('활성','warn')+'</td><td><button class="btn-gray" onclick="delEx(\''+e.id+'\')">취소</button></td>';
-      tb.appendChild(tr);
+  const rows = [];
+  if (isPreview && d.buckets) {
+    ['ready', 'done', 'unchecked', 'stuck', 'amountMissing'].forEach(function (k) {
+      (d.buckets[k] || []).forEach(function (p) { rows.push(Object.assign({ _bucket: k }, p)); });
     });
-    if(!d.exceptions.length) tb.innerHTML = '<tr><td colspan="7">등록된 예외가 없습니다.</td></tr>';
-    $('cardEx').classList.remove('hidden');
-  }catch(e){ log('❌ '+e.message); }
+  } else {
+    (d.results || []).forEach(function (x) { rows.push(x); });
+  }
+  const resultMap = { '생성성공': 'ok', '이미생성_완료처리': 'warn', '실패': 'err' };
+  const bucketMap = { ready: ['실행대상', 'ok'], done: ['발행완료', 'ok'], unchecked: ['3체크 해제', 'err'], stuck: ['처리중 멈춤', 'err'], amountMissing: ['판매금 누락', 'warn'] };
+
+  html += table([
+    { t: '거래처', k: 'client' }, { t: '납품일자', k: 'date' }, { t: '품목', k: 'title', mid: 1 },
+    { t: '수량', k: '_q', num: 1, raw: 1 }, { t: '금액', k: '_a', num: 1, raw: 1 },
+    { t: '판정', k: '_st', raw: 1 }, { t: '메모', k: 'error', mid: 1 },
+    { t: '페이지', k: '_ln', raw: 1 }
+  ], rows.map(function (x) {
+    let st;
+    if (x._bucket) { const m = bucketMap[x._bucket] || ['-', 'neutral']; st = badge(m[0], m[1]); }
+    else st = x.result ? badge(x.result, resultMap[x.result] || 'warn') : badge('—', 'neutral');
+    const url = x.url || '';
+    return {
+      client: x.client, date: x.date, title: x.title,
+      _q: num(x.qty), _a: won(x.amount), _st: st,
+      error: x.error || '', _ln: url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">열기</a>' : '-'
+    };
+  }), '해당 건이 없습니다.');
+
+  $('s1Out').innerHTML = html;
+  STATE.s1 = d;
+  renderFlow();
 }
-$('btnExSave').onclick = async function(){
-  busy(this,true);
-  try{
-    await api('exceptions_save',{
-      month:$('month').value, type:$('exType').value,
-      clientName:$('exClient').value.trim(), pageId:$('exPage').value.trim(),
-      qty:Number($('exNum').value)||0, amount:Number($('exNum').value)||0,
-      reason:$('exReason').value.trim()
+
+$('btnS1Prev').onclick = async function () {
+  busy(this, true);
+  try {
+    const d = await api('stage1_preview', { month: $('month').value });
+    log('1단계 미리보기: 실행대상 ' + (d.buckets.ready || []).length + ' / 3체크해제 ' + (d.buckets.unchecked || []).length + ' / 중복 ' + (d.dupCount || 0), 'ok');
+    renderStage1(d, true);
+    if ((d.buckets.unchecked || []).length) toast('3체크 모두 해제된 페이지 ' + d.buckets.unchecked.length + '건 — 이번 사고 유형입니다.', 'err');
+  } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+  busy(this, false, '미리보기 (변경 없음)');
+};
+
+$('btnS1Run').onclick = async function () {
+  const ok = await confirmBox('1단계 실행',
+    '노션 입출고 페이지의 체크박스가 실제로 변경되고, 세금계산서 DB에 페이지가 생성됩니다.\n실행 후 자동 검증 + 필요 시 경고 메일이 발송됩니다.\n\n계속할까요?', '실행');
+  if (!ok) return;
+  busy(this, true);
+  try {
+    const d = await api('stage1_run', { month: $('month').value });
+    log('1단계 실행: ' + d.summary, 'ok');
+    renderStage1(d, false);
+    if (!(d.verification || {}).pass) toast('1단계 검증 경고 — 표의 미체크 항목을 확인하세요.', 'err');
+  } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+  busy(this, false, '1단계 실행');
+};
+
+$('btnS1All').onclick = async function () {
+  const b = $('btnSnap');
+  try {
+    b.click();
+    await new Promise(function (r) { setTimeout(r, 700); });
+    $('btnS1Prev').click();
+  } catch (e) { /* 개별 버튼이 로그 처리 */ }
+};
+
+/* =====================================================================
+ * 2단계
+ * ===================================================================== */
+function renderStage2(d) {
+  const r = d.recon || {};
+  let html = '<div class="note" style="background:#F8FAFF">' + esc(d.summary || '') +
+    (d.execute ? ' · 시트 기록 ' + num((d.excel || {}).rowCount) + '행' : ' · 미리보기 모드(시트 변경 없음)') + '</div>';
+
+  html += kpiGrid([
+    ['입력 페이지', num(r.inputPages) + '<span class="u">건</span>', ''],
+    ['집계 행(거래처)', num(r.groupCount) + '<span class="u">행</span>', 'ok'],
+    ['사업자번호없음', num(r.noBizNoCount) + '<span class="u">건</span>', r.noBizNoCount ? 'warn' : 'ok'],
+    ['차액(수량)', num(r.diffQty) + '<span class="u">박스</span>', r.diffQty ? 'err' : 'ok'],
+    ['차액(금액)', won(r.diffAmount), r.diffAmount ? 'err' : 'ok'],
+    ['페이지 불일치', num((r.pageIssues || []).length) + '<span class="u">건</span>', (r.pageIssues || []).length ? 'err' : 'ok']
+  ]);
+
+  html += r.ok
+    ? '<div class="note ok"><b>✅ 집계 대사 일치</b> — 입력(수량 ' + num(r.inputQty) + ' / ' + won(r.inputAmount) + ') = 집계(' + num(r.groupQty) + ' / ' + won(r.groupAmount) + ') + 사업자번호없음(' + num(r.noBizNoQty) + ' / ' + won(r.noBizNoAmount) + ')</div>'
+    : '<div class="note err"><b>⚠ 차액 발생</b> — 입력 ' + num(r.inputQty) + '박스 / ' + won(r.inputAmount) + ' ↔ 집계+제외 ' + num((r.groupQty || 0) + (r.noBizNoQty || 0)) + '박스 / ' + won((r.groupAmount || 0) + (r.noBizNoAmount || 0)) + '<br>· 차액: 수량 ' + num(r.diffQty) + ' / ' + won(r.diffAmount) + '<br>→ 0이 아니면 파일을 확정하지 말고 원본 페이지를 확인하세요.</div>';
+
+  html += table([
+    { t: '사업자번호', k: 'bizNo' }, { t: '거래처', k: 'clientName' }, { t: '사업자명', k: 'businessName' },
+    { t: '페이지', k: '_pc', num: 1, raw: 1 }, { t: '수량', k: '_q', num: 1, raw: 1 },
+    { t: '공급가액', k: '_s', num: 1, raw: 1 }, { t: '세액', k: '_t', num: 1, raw: 1 }, { t: '합계', k: '_b', num: 1, raw: 1 },
+    { t: '확인식', k: '_ok', raw: 1 }
+  ], (d.groups || []).map(function (g) {
+    return {
+      bizNo: g.bizNo, clientName: g.clientName, businessName: g.businessName,
+      _pc: num(g.pageCount), _q: num(g.qty), _s: won(g.supply), _t: won(g.tax), _b: won(g.base),
+      _ok: (g.pageIssues || []).length ? badge('불일치 ' + g.pageIssues.length, 'err') : badge('일치', 'ok')
+    };
+  }), '집계 대상이 없습니다.');
+
+  if ((d.noBizNo || []).length) {
+    html += '<div class="note warn"><b>사업자번호(등록번호) 없음 ' + d.noBizNo.length + '건</b> — 세금계산서 발행 불가. 거래처 DB에 등록번호를 채워야 다음 달부터 자동 발행됩니다.</div>';
+    html += table([
+      { t: '거래처', k: 'client' }, { t: '납품일자', k: 'date' },
+      { t: '수량', k: '_q', num: 1, raw: 1 }, { t: '금액', k: '_a', num: 1, raw: 1 }, { t: '페이지', k: '_ln', raw: 1 }
+    ], d.noBizNo.map(function (t) {
+      return {
+        client: t.client, date: t.date, _q: num(t.qty), _a: won(t.amount),
+        _ln: t.url ? '<a href="' + esc(t.url) + '" target="_blank" rel="noopener">열기</a>' : '-'
+      };
+    }));
+  }
+  $('s2Out').innerHTML = html;
+  if (d.recon) { STATE.s1 = STATE.s1 || {}; STATE.s1.recon = Object.assign({}, STATE.s1.recon || {}, {
+    linkedPages: d.recon.groupCount, linkedQty: d.recon.groupQty, linkedAmount: d.recon.groupAmount,
+    missingCount: d.recon.noBizNoCount, missingQty: d.recon.noBizNoQty, missingAmount: d.recon.noBizNoAmount
+  }); renderFlow(); }
+}
+
+$('btnS2Prev').onclick = async function () {
+  busy(this, true);
+  try {
+    const d = await api('stage2_preview', { month: $('month').value });
+    log('2단계 미리보기: ' + d.summary, 'ok');
+    renderStage2(d);
+  } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+  busy(this, false, '미리보기 (변경 없음)');
+};
+
+$('btnS2Run').onclick = async function () {
+  const ok = await confirmBox('2단계 실행',
+    '홈택스 엑셀양식 시트(7행 이하)가 새로 기록되고, 성공한 페이지는 “전송완료”로 체크됩니다.\n기존에 손으로 고친 줄은 사라집니다.\n\n계속할까요?', '실행');
+  if (!ok) return;
+  busy(this, true);
+  try {
+    const d = await api('stage2_run', { month: $('month').value });
+    log('2단계 실행: ' + d.summary, 'ok');
+    renderStage2(d);
+    if (d.recon && !d.recon.ok) toast('집계 차액이 있습니다. 3단계 확정 전에 확인하세요.', 'err');
+  } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+  busy(this, false, '2단계 실행 (시트 기록)');
+};
+
+/* =====================================================================
+ * 예외
+ * ===================================================================== */
+const EX_NAME = { EXCLUDE_CLIENT: '거래처 제외', EXCLUDE_PAGE: '납품건 제외', SET_QTY: '수량수정', SET_AMOUNT: '금액수정' };
+async function loadExceptions(silent) {
+  try {
+    const d = await api('exceptions_list', { month: $('month').value });
+    const list = d.exceptions || [];
+    $('exOut').innerHTML =
+      '<div class="note" style="background:#F8FAFF">등록된 예외 <b>' + list.length + '건</b>. 3단계에서 자동 반영되며 “월별 이슈사항” 시트에도 기록됩니다.</div>' +
+      table([
+        { t: '유형', k: '_ty', raw: 1 }, { t: '거래처', k: 'clientName' },
+        { t: '납품건', k: '_pg' }, { t: '값', k: '_v', num: 1, raw: 1 },
+        { t: '사유', k: 'reason', mid: 1 }, { t: '상태', k: '_st', raw: 1 }, { t: '관리', k: '_x', raw: 1 }
+      ], list.map(function (e) {
+        const v = e.type === 'SET_QTY' ? num(e.qty) + '박스' : e.type === 'SET_AMOUNT' ? won(e.amount) : '-';
+        return {
+          _ty: badge(EX_NAME[e.type] || e.type, 'warn'), clientName: e.clientName,
+          _pg: e.pageId || '-', _v: v, reason: e.reason || '',
+          _st: badge('활성', 'warn'),
+          _x: '<button class="btn btn-danger btn-sm" data-exdel="' + esc(e.id) + '">취소</button>'
+        };
+      }), '등록된 예외가 없습니다.');
+    Array.prototype.forEach.call($('exOut').querySelectorAll('[data-exdel]'), function (b) {
+      b.onclick = function () { delException(b.getAttribute('data-exdel')); };
     });
-    log('✅ 예외 등록 완료');
-    $('exClient').value='';$('exPage').value='';$('exNum').value='';$('exReason').value='';
-    loadExceptions();
-  }catch(e){ log('❌ '+e.message); alert(e.message); }
-  busy(this,false);
-};
-window.delEx = async function(id){
-  try{ await api('exceptions_delete',{exceptId:id}); log('예외 취소: '+id); loadExceptions(); }
-  catch(e){ alert(e.message); }
-};
-
-/* ---------- 3단계 ---------- */
-function renderS3(d){
-  $('s3Summary').innerHTML = d.summary;
-  const items = [
-    ['원본 페이지', d.recon.src.srcPages,''],['원본 총수량', d.recon.src.srcQty,''],['원본 총금액', won(d.recon.src.srcAmount),''],
-    ['연동 페이지', d.recon.src.linkedPages, d.recon.src.missingCount?'warn':'ok'],
-    ['사업자번호없음', d.noBizNo.count + '건 / ' + won(d.noBizNo.amount),'warn'],
-    ['예외 반영', d.exceptionsApplied.length + '건','warn'],
-    ['최종 발행 행', d.finalRows.length,'ok'],
-    ['설명불명 차액', won(d.recon.unexplained.amount) + ' / ' + d.recon.unexplained.qty + '박스', d.recon.pass?'ok':'err']
-  ];
-  $('s3Flow').innerHTML = d.recon.flow.map(f=>'<div class="fstep"><div class="s">'+f.stage+'</div><div class="n">'+f.pages+'건</div><div class="a">'+f.qty+'박스 / '+won(f.amount)+'</div></div>').join('');
-  $('s3Problems').innerHTML = d.recon.pass
-    ? '<div style="margin:8px 0">'+badge('✅ 최종 검증 통과 — 발행 파일 확정 가능','ok')+'</div>'
-    : '<div class="note" style="border-color:#C62828;background:var(--errbg)">⛔ <b>검증 실패 — 파일 확정 금지</b><br>· '+d.recon.problems.join('<br>· ')+'</div>';
-  const tb = $('tblS3').querySelector('tbody'); tb.innerHTML='';
-  d.finalRows.forEach(r=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML='<td>'+r.bizNo+'</td><td>'+r.clientName+'</td><td>'+r.businessName+'</td><td>'+r.ceo+'</td><td>'+r.qty+'</td><td>'+won(r.supply)+'</td><td>'+won(r.tax)+'</td><td>'+won(r.base)+'</td><td>'+r.calcMethod+'</td><td>'+(r.applied&&r.applied.length?r.applied.join(', '):'-')+'</td>';
-    tb.appendChild(tr);
-  });
-  $('verdictBox').innerHTML = d.recon.pass
-    ? '<div class="note" style="background:var(--okbg);border-color:#2E7D32">🎉 엑셀업로드양식 시트에 최종 행이 기록되었습니다. 시트를 열어 거래처 행 수·합계를 눈으로 한 번 더 확인한 뒤 홈택스에 업로드하세요. (검증 통과 = 웹앱이 계산한 값과 시트 값 일치)</div>'
-    : '<div class="note" style="background:var(--errbg)">확정은 되었으나 검증 실패 상태입니다. 위 문제를 해결한 뒤 3단계를 다시 실행하세요.</div>';
-  $('cardS3').classList.remove('hidden');
+  } catch (e) {
+    if (!silent) { log(e.message, 'err'); }
+    $('exOut').innerHTML = '<div class="note err">예외 목록을 읽지 못했습니다: ' + esc(e.message) + '</div>';
+  }
 }
-$('btnS3').onclick = async function(){
-  busy(this,true);
-  try{
-    const d = await api('stage3_final',{month:$('month').value});
-    log('✅ 3단계: ' + d.summary);
-    renderS3(d); loadExceptions();
-  }catch(e){ log('❌ ' + e.message); alert(e.message); }
-  busy(this,false);
-};
-$('btnDownload').onclick = function(){
-  window.open(WEBAPP_URL + '?action=export&month=' + encodeURIComponent($('month').value), '_blank');
+async function delException(id) {
+  const ok = await confirmBox('예외 취소', '이 예외를 삭제할까요?\n삭제하면 3단계에서 다시 원래 값으로 계산됩니다.', '삭제');
+  if (!ok) return;
+  try { await api('exceptions_delete', { exceptId: id }); log('예외 취소: ' + id, 'ok'); loadExceptions(true); }
+  catch (e) { toast(e.message, 'err'); }
+}
+$('btnExSave').onclick = async function () {
+  const type = $('exType').value;
+  const client = $('exClient').value.trim();
+  if (!client) { toast('거래처명을 입력하세요.', 'err'); $('exClient').focus(); return; }
+  busy(this, true);
+  try {
+    await api('exceptions_save', {
+      month: $('month').value, type: type,
+      clientName: client,
+      pageId: $('exPage').value.trim(),
+      qty: Number($('exNum').value) || 0,
+      amount: Number($('exNum').value) || 0,
+      reason: $('exReason').value.trim()
+    });
+    log('예외 등록: ' + (EX_NAME[type] || type) + ' / ' + client, 'ok');
+    $('exClient').value = ''; $('exPage').value = ''; $('exNum').value = ''; $('exReason').value = '';
+    loadExceptions(true);
+  } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+  busy(this, false, '예외 등록');
 };
 
-/* 화면 로드 시 예외 목록 미리 읽기 */
-loadExceptions();
+/* =====================================================================
+ * 3단계
+ * ===================================================================== */
+function renderStage3(d) {
+  const r = d.recon || {};
+  const src = r.src || {};
+  const un = r.unexplained || {};
+  let html = '<div class="note" style="background:#F8FAFF">' + esc(d.summary || '') + '</div>';
+
+  if (r.flow && r.flow.length) {
+    html += '<div class="flow">' + r.flow.map(function (f) {
+      return '<div class="fstep"><div class="s">' + esc(f.stage) + '</div>' +
+        '<div class="n">' + num(f.pages) + '건</div>' +
+        '<div class="a">' + num(f.qty) + '박스 · ' + won(f.amount) + '</div></div>';
+    }).join('') + '</div>';
+  }
+
+  html += kpiGrid([
+    ['원본 페이지', num(src.srcPages) + '<span class="u">건</span>', ''],
+    ['원본 수량/금액', num(src.srcQty) + ' / ' + won(src.srcAmount), ''],
+    ['연동 페이지', num(src.linkedPages) + '<span class="u">건</span>', src.missingCount ? 'warn' : 'ok'],
+    ['사업자번호없음', num((d.noBizNo || {}).count) + '<span class="u">건</span>', 'warn'],
+    ['예외 반영', num((d.exceptionsApplied || []).length) + '<span class="u">건</span>', (d.exceptionsApplied || []).length ? 'warn' : ''],
+    ['최종 발행 행', num((d.finalRows || []).length) + '<span class="u">행</span>', 'ok']
+  ]);
+
+  html += kpiGrid([
+    ['설명불명 차액(금액)', won(un.amount), un.amount ? 'err' : 'ok'],
+    ['설명불명 차액(수량)', num(un.qty) + '<span class="u">박스</span>', un.qty ? 'err' : 'ok'],
+    ['최종 수량', num(r.finalQty) + '<span class="u">박스</span>', ''],
+    ['최종 금액', won(r.finalAmount), ''],
+    ['집계월', esc($('month').value), ''],
+    ['상태', r.pass ? badge('검증통과', 'ok') : badge('검증실패', 'err'), '']
+  ]);
+
+  html += r.pass
+    ? '<div class="note ok"><b>✅ 최종 검증 통과</b> — 원본 ' + num(src.srcPages) + '건 / ' + num(src.srcQty) + '박스 / ' + won(src.srcAmount) + ' 이(가) 사업자번호없음(' + num((d.noBizNo || {}).count) + '건)과 예외(' + num((d.exceptionsApplied || []).length) + '건)를 제외한 뒤 <b>최종 ' + num((d.finalRows || []).length) + '행</b>으로 정확히 설명됩니다. 시트를 열어 눈으로 한 번 더 확인한 뒤 홈택스에 업로드하세요.</div>'
+    : '<div class="note err"><b>⛔ 검증 실패 — 파일 확정 금지</b><ul>' + (r.problems || []).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>설명불명 차액이 0이 될 때까지 원본 페이지·예외를 확인하세요.</div>';
+
+  html += table([
+    { t: '사업자번호', k: 'bizNo' }, { t: '거래처', k: 'clientName' }, { t: '사업자명', k: 'businessName' },
+    { t: '대표자', k: 'ceo' }, { t: '수량', k: '_q', num: 1, raw: 1 },
+    { t: '공급가액', k: '_s', num: 1, raw: 1 }, { t: '세액', k: '_t', num: 1, raw: 1 }, { t: '합계', k: '_b', num: 1, raw: 1 },
+    { t: '산출', k: 'calcMethod' }, { t: '적용 예외', k: '_ap' }
+  ], (d.finalRows || []).map(function (x) {
+    return {
+      bizNo: x.bizNo, clientName: x.clientName, businessName: x.businessName, ceo: x.ceo,
+      _q: num(x.qty), _s: won(x.supply), _t: won(x.tax), _b: won(x.base),
+      calcMethod: x.calcMethod, _ap: (x.applied && x.applied.length) ? x.applied.join(', ') : '-'
+    };
+  }), '최종 행이 없습니다.');
+
+  $('s3Out').innerHTML = html;
+  STATE.s3 = d;
+  renderFlow();
+}
+
+$('btnS3').onclick = async function () {
+  const ok = await confirmBox('최종 확정',
+    '예외를 반영해 엑셀업로드양식 시트를 최종 기록하고, 단계별 대사 결과를 남깁니다.\n차액이 0이 아니면 경고 메일이 발송됩니다.\n\n확정할까요?', '확정');
+  if (!ok) return;
+  busy(this, true);
+  try {
+    const d = await api('stage3_final', { month: $('month').value });
+    log('3단계 확정: ' + d.summary, 'ok');
+    renderStage3(d);
+    loadExceptions(true);
+    if (d.recon && d.recon.pass) toast('검증 통과 · ' + (d.finalRows || []).length + '행 확정', 'ok');
+    else toast('검증 실패 — 위 문제를 먼저 해결하세요.', 'err');
+  } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+  busy(this, false, '최종 확정 + 시트 기록');
+};
+
+$('btnDl').onclick = function () {
+  const url = WEBAPP_URL + '?action=export&month=' + encodeURIComponent($('month').value);
+  log('CSV 내려받기 요청: ' + $('month').value);
+  window.open(url, '_blank', 'noopener');
+};
+
+$('btnLogClear').onclick = function () { $('log').innerHTML = ''; };
+
+/* 첫 진입: 예외 목록만 조용히 확인 */
+log('세금계산서 컨트롤 타워 준비 완료. 집계월을 선택하고 0단계 스냅샷부터 실행하세요.');
+loadExceptions(true);
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
