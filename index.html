@@ -185,7 +185,7 @@ pre.log .wn{color:#FCD34D}
 .side .row{display:flex; justify-content:space-between; font-size:12px; padding:3px 0; border-bottom:1px dashed #E6EDF5}
 .side .row:last-child{border-bottom:0}
 .side .row b{font-weight:800}
-/* [v3.1] 세션 접기/펼치기 */
+/* [v4.0] 세션 접기/펼치기 */
 .step.collapsed .step-bd{display:none}
 .step-hd{cursor:pointer;user-select:none;-webkit-user-select:none}
 .chev{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:1px solid var(--line-2);background:#fff;
@@ -210,7 +210,7 @@ tr.editing td{background:#FFF9E6!important}
     <div class="brand">
       <div class="brand-mark">PZ</div>
       <div class="brand-txt">
-        <h1>세금계산서 컨트롤 타워 <span style="font-size:11px;color:#8FE3B4">v3.1</span></h1>
+        <h1>세금계산서 컨트롤 타워 <span style="font-size:11px;color:#8FE3B4">v4.0</span></h1>
         <p>노션 출고 → 세금계산서 DB → 홈택스 엑셀양식 → 발행률·차액</p>
       </div>
     </div>
@@ -225,6 +225,30 @@ tr.editing td{background:#FFF9E6!important}
 </header>
 
 <main class="wrap">
+
+  <!-- [v4.0] 사용 매뉴얼 (상단 고정) -->
+  <section class="step" id="manualSec">
+    <div class="step-hd">
+      <div class="step-no">?</div>
+      <div class="step-tt">
+        <h2>사용 매뉴얼 <span class="badge b-info">언제든 펼쳐보기</span></h2>
+        <p>6단계 순서만 지키면 됩니다. 각 단계는 헤더를 눌러 접고 펼 수 있습니다.</p>
+      </div>
+      <div class="chev" title="접기/펼치기"><span class="a">▼</span></div>
+    </div>
+    <div class="step-bd">
+      <div class="note info" style="margin:0 0 8px">
+        <b>① 스냅샷</b> → <b>② 1단계(세금계산서 DB 생성)</b> → <b>③ 2단계(엑셀양식 기록)</b> →
+        <b>④ 예외 등록</b> → <b>⑤ 3단계 최종 확정</b> → <b>⑥ 엑셀 파일 홈택스 업로드</b>
+      </div>
+      <div id="manualBody"></div>
+      <div class="note" style="margin-top:8px">
+        <b>중요</b> · 시간 제한으로 끊기는 문제는 v4.0에서 <b>브라우저가 자동으로 이어서 호출</b>하는 방식으로 바뀌었습니다.
+        1단계를 누른 뒤 창을 닫지 마세요(닫아도 서버 트리거가 이어받습니다). 남은 건이 0이 될 때까지 자동 반복됩니다.
+      </div>
+    </div>
+  </section>
+
   <div id="flow"></div>
 
   <!-- 0 -->
@@ -422,7 +446,7 @@ tr.editing td{background:#FFF9E6!important}
   </div>
 
   <p class="foot">
-    푸로찜 에스 · 세금계산서 컨트롤 타워 v3.1<br>
+    푸로찜 에스 · 세금계산서 컨트롤 타워 v4.0<br>
     1단계는 서버가 자동으로 이어서 처리합니다(6분 제한 근본 해결). 처음엔 “진단”으로 숫자를 확인한 뒤 실행하세요.
   </p>
 </main>
@@ -442,7 +466,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz_eAt4d_4Xy3uhhOaeR4wcR-WdTGHT5oUAzknZPawWZ-2W4lsj7uUzgja4Bs7pebS5/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbykhVRnVl_FD2SeM-52CzpXnicAZD_reXooLabaSC4oofKWxfD3-qKKRSnrrhmGV9c/exec';
 const TIMEOUT_MS = 360000;
 
 const $ = function (id) { return document.getElementById(id); };
@@ -585,7 +609,7 @@ function table(cols, rows, emptyText) {
     '</tr></thead><tbody>' +
     rows.map(function (r, idx) {
       return '<tr' + (r._rowAttr || '') + '>' + cols.map(function (c) {
-        if (c.no) return '<td class="no-col num">' + (idx + 1) + '</td>';   /* [v3.1] 표시 전용 No. — 연동값 아님 */
+        if (c.no) return '<td class="no-col num">' + (idx + 1) + '</td>';   /* [v4.0] 표시 전용 No. — 연동값 아님 */
         return '<td class="' + (c.num ? 'num' : '') + (c.mid ? ' mid' : '') + '">' + (c.raw ? r[c.k] : esc(r[c.k])) + '</td>';
       }).join('') + '</tr>';
     }).join('') + '</tbody></table></div>';
@@ -1233,7 +1257,7 @@ $('btnIssue').onclick = async function () {
 $('btnLogClear').onclick = function () { $('log').innerHTML = ''; };
 
 /* =====================================================================
- * [v3.1] 세션 접기/펼치기 + 모두 접기
+ * [v4.0] 세션 접기/펼치기 + 모두 접기
  * ===================================================================== */
 (function initCollapse() {
   Array.prototype.forEach.call(document.querySelectorAll('.step-hd'), function (hd) {
@@ -1265,7 +1289,7 @@ $('btnLogClear').onclick = function () { $('log').innerHTML = ''; };
 })();
 
 /* =====================================================================
- * [v3.1] 1단계 자동 이어처리 진행상황 폴링 — 버튼 재클릭 불필요
+ * [v4.0] 1단계 자동 이어처리 진행상황 폴링 — 버튼 재클릭 불필요
  * ===================================================================== */
 let pollTimer = null;
 function startStage1Polling() {
@@ -1294,7 +1318,7 @@ function stopStage1Polling() {
 }
 
 /* =====================================================================
- * [v3.1] 행 클릭 인라인 수정 — 납품건 ID(제외 시)는 서버가 자동 분해·기록
+ * [v4.0] 행 클릭 인라인 수정 — 납품건 ID(제외 시)는 서버가 자동 분해·기록
  * ===================================================================== */
 function openRowEdit(clientName) {
   let row = null;
@@ -1354,10 +1378,415 @@ $('exType').addEventListener('change', function () {
   $('exPageField').style.display = (this.value === 'EXCLUDE_PAGE') ? 'flex' : 'none';
 });
 
-log('세금계산서 컨트롤 타워 v3.1 준비 완료. 집계월 선택 → 스냅샷 → 진단 → 실행 순서로 진행하세요. 1단계 잔여 건은 서버가 자동 이어처리합니다.');
+log('세금계산서 컨트롤 타워 v4.0 준비 완료. 집계월 선택 → 스냅샷 → 진단 → 실행 순서로 진행하세요. 1단계 잔여 건은 서버가 자동 이어처리합니다.');
 loadExceptions(true);
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+
+<script>
+/* =====================================================================
+ * [v4.0] UI 패치 — 원본 코드는 그대로 두고 아래에서 덧입힙니다.
+ *   1) 섹션별 접기/펼치기 버튼
+ *   2) 모든 표에 표시 전용 No. 열 (연동값 아님 — 화면 전용)
+ *   3) 1단계: 큐 + 브라우저 자동 연속 호출 (6분 제한 근본 해결)
+ *   4) 2단계/3단계: v4 서버 로직 연결 + 엑셀 기록 확인
+ *   5) 예외: 등록 즉시 목록/숫자 반영 + 이월(보류) 정산 UI
+ * ===================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------- 1) 섹션별 접기/펼치기 버튼 ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll('.step'), function (sec) {
+    var hd = sec.querySelector('.step-hd');
+    if (!hd || hd.querySelector('.btn-sec-collapse')) return;
+    var b = document.createElement('button');
+    b.className = 'btn btn-ghost btn-sm btn-sec-collapse';
+    b.type = 'button';
+    b.textContent = '접기';
+    b.style.marginRight = '6px';
+    b.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      sec.classList.toggle('collapsed');
+      b.textContent = sec.classList.contains('collapsed') ? '펼치기' : '접기';
+    });
+    var chev = hd.querySelector('.chev');
+    hd.insertBefore(b, chev || null);
+  });
+
+  /* ---------- 2) 모든 표에 표시 전용 No. 열 ---------- */
+  function decorateTables(root) {
+    var tables = (root || document).querySelectorAll('table');
+    Array.prototype.forEach.call(tables, function (t) {
+      if (!t.tHead || !t.tHead.rows.length) return;
+      var headRow = t.tHead.rows[0];
+      if (headRow.cells.length && headRow.cells[0].getAttribute('data-no') === '1') return;
+      var th = document.createElement('th');
+      th.textContent = 'No.';
+      th.className = 'num';
+      th.setAttribute('data-no', '1');
+      headRow.insertBefore(th, headRow.cells[0] || null);
+      var bodies = t.tBodies;
+      for (var bi = 0; bi < bodies.length; bi++) {
+        var rows = bodies[bi].rows;
+        for (var i = 0; i < rows.length; i++) {
+          var r = rows[i];
+          if (r.cells.length === 1 && Number(r.cells[0].colSpan) > 1) {
+            r.cells[0].colSpan = Number(r.cells[0].colSpan) + 1;
+            continue;
+          }
+          var td = document.createElement('td');
+          td.className = 'no-col num';
+          td.textContent = String(i + 1);
+          r.insertBefore(td, r.cells[0] || null);
+        }
+      }
+    });
+  }
+  window.decorateTables = decorateTables;
+
+  var obs = new MutationObserver(function (muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var nodes = muts[i].addedNodes;
+      for (var j = 0; j < nodes.length; j++) {
+        var n = nodes[j];
+        if (n.nodeType !== 1) continue;
+        if (n.tagName === 'TABLE' || (n.querySelector && n.querySelector('table'))) {
+          decorateTables(n.tagName === 'TABLE' ? n.parentNode : n);
+        }
+      }
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+
+  /* ---------- 매뉴얼 렌더 ---------- */
+  (async function renderManual() {
+    try {
+      var d = await api('manual', {});
+      var steps = d.steps || [];
+      var h = '<div class="tblwrap"><table><thead><tr><th>단계</th><th>할 일</th></tr></thead><tbody>' +
+        steps.map(function (s, i) {
+          return '<tr><td class="num" style="font-weight:800;color:#1E5EFF">' + (i + 1) + '</td><td class="mid">' + esc(s) + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      h += '<div class="tblwrap" style="margin-top:8px"><table><thead><tr><th>증상</th><th>해결</th></tr></thead><tbody>' +
+        '<tr><td>1단계가 중간에 멈춘 것 같다</td><td class="mid">이 화면을 닫지 말고 기다리세요. 잔여 건이 0이 될 때까지 자동으로 이어서 처리합니다. 급하면 [1단계 실행]을 다시 눌러도 중복 생성되지 않습니다(원본입출고ID 중복 방지).</td></tr>' +
+        '<tr><td>엑셀업로드양식이 비어 보인다</td><td class="mid">2단계 또는 3단계를 실행한 뒤 [엑셀 기록 확인]을 누르세요. 매번 A7:BG140을 리셋하고 다시 기록합니다.</td></tr>' +
+        '<tr><td>예외를 등록했는데 숫자가 그대로다</td><td class="mid">등록 후 표가 즉시 다시 계산됩니다. 3단계 미리보기에서 최종 반영을 확인하세요.</td></tr>' +
+        '<tr><td>지난달 보류 건은?</td><td class="mid">[E 예외 처리] → [이월 발행 정산]에서 실제 발행 금액을 입력하면 이번 달 엑셀에 포함되고 지난달 발행률도 함께 갱신됩니다.</td></tr>' +
+        '</tbody></table></div>';
+      $('manualBody').innerHTML = h;
+      decorateTables($('manualBody'));
+    } catch (e) { $('manualBody').innerHTML = '<div class="note warn">매뉴얼을 불러오지 못했습니다: ' + esc(e.message) + '</div>'; }
+  })();
+
+  /* ---------- 3) 1단계: 큐 + 자동 연속 호출 ---------- */
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  $('btnS1Run').onclick = async function () {
+    var inc = $('s1Unchecked').checked;
+    var ok = await confirmBox('1단계 실행',
+      '노션 입출고 페이지의 체크박스가 바뀌고, 세금계산서 DB에 페이지가 생성됩니다.\n' +
+      (inc ? '※ "미체크도 포함"이 켜져 있어 계산서 발행 미체크 페이지도 생성됩니다.\n' : '') +
+      '\n이제 건수 제한 없이 끝까지 처리합니다. 화면이 자동으로 이어서 호출하므로 창을 닫지 마세요.\n\n진행할까요?', '실행');
+    if (!ok) return;
+    var btn = this;
+    busy(btn, true);
+    var month = $('month').value;
+    var totalCreated = 0, totalHealed = 0, totalFailed = 0, guard = 0, last = null;
+    try {
+      var prep = await api('stage1_prepare', { month: month, includeUnchecked: inc, retryStuck: true });
+      log('1단계 큐 생성: ' + prep.summary, 'ok');
+      if (!prep.queued) { toast('처리할 대상이 없습니다.', 'warn'); busy(btn, false, '1단계 실행'); return; }
+
+      $('s1Poll').innerHTML = '<span class="badge b-info">자동 연속 처리 중… 0 / ' + prep.queued + '</span>';
+
+      while (guard++ < 60) {
+        var d = await api('stage1_batch', { month: month, limit: 80, includeUnchecked: inc, retryStuck: true, auto: true });
+        d.recon = d.recon || { missingCount: 0, missingQty: 0, missingAmount: 0 };
+        d.autoResume = false;
+        last = d;
+        totalCreated += (d.counts || {}).created || 0;
+        totalHealed += (d.counts || {}).healed || 0;
+        totalFailed += (d.counts || {}).failed || 0;
+        try { renderStage1(d); } catch (e) {}
+        var doneN = (d.cursor || 0);
+        $('s1Poll').innerHTML = '<span class="badge b-info">자동 연속 처리 중… ' + num(doneN) + ' / ' + num(d.total) + '</span>';
+        log('1단계 배치: ' + d.summary, (d.counts || {}).failed ? 'warn' : 'ok');
+        if (!d.remaining) break;
+        await sleep(700);
+      }
+      $('s1Poll').innerHTML = '<span class="badge b-ok">1단계 완료 — 생성 ' + num(totalCreated) + ' / 치유 ' + num(totalHealed) + '</span>';
+      toast('1단계 완료 — 생성 ' + totalCreated + '건' + (totalFailed ? ' / 실패 ' + totalFailed + '건' : ''), totalFailed ? 'warn' : 'ok');
+      if (last) { last.counts.created = totalCreated; last.counts.healed = totalHealed; last.counts.failed = totalFailed; try { renderStage1(last); } catch (e) {} }
+      loadExceptions(true);
+    } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+    busy(btn, false, '1단계 실행');
+  };
+
+  /* 1단계 큐 취소 버튼 추가 */
+  (function addCancelBtn() {
+    var host = $('btnS1Diag').parentNode;
+    if (!host || $('btnS1Cancel')) return;
+    var b = document.createElement('button');
+    b.className = 'btn btn-ghost btn-sm';
+    b.id = 'btnS1Cancel';
+    b.textContent = '자동처리 중지';
+    b.onclick = async function () {
+      busy(b, true);
+      try { var d = await api('stage1_cancel', { month: $('month').value }); log(d.summary, 'warn'); toast(d.summary, 'warn'); $('s1Poll').innerHTML = ''; }
+      catch (e) { toast(e.message, 'err'); }
+      busy(b, false, '자동처리 중지');
+    };
+    host.appendChild(b);
+  })();
+
+  /* ---------- 4) 2단계: v4 + 전송여부 자동/수동 ---------- */
+  $('btnS2Run').onclick = async function () {
+    var ok = await confirmBox('2단계 실행',
+      '엑셀업로드양식 A7:BG140 을 초기화한 뒤 거래처별로 합산해 다시 기록합니다.\n' +
+      '동시에 세금계산서 DB의 [전송여부]·[전송완료]가 자동 체크됩니다.\n\n진행할까요?', '실행');
+    if (!ok) return;
+    busy(this, true);
+    try {
+      var d = await api('stage2_run', { month: $('month').value, execute: true });
+      renderStage2(d); decorateTables($('s2Out'));
+      log('2단계 실행: ' + d.summary, 'ok');
+      toast('2단계 완료 · 엑셀 ' + ((d.excel || {}).rowCount || 0) + '행 기록', 'ok');
+      if (d.excel && d.excel.checked === false) toast('엑셀 기록 확인 실패 — 시트 보호/권한을 확인하세요.', 'err');
+      if (d.warnings && d.warnings.length) log('2단계 경고: ' + d.warnings.join(' / '), 'warn');
+    } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+    busy(this, false, '2단계 실행 (시트 기록)');
+  };
+
+  $('btnS2Prev').onclick = async function () {
+    busy(this, true);
+    try {
+      var d = await api('stage2_run', { month: $('month').value, execute: false });
+      renderStage2(d); decorateTables($('s2Out'));
+      log('2단계 미리보기: ' + d.summary, 'ok');
+    } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+    busy(this, false, '미리보기 (변경 없음)');
+  };
+
+  /* 전송여부 일괄 버튼 + 엑셀 기록 확인 버튼 */
+  (function addStage2Tools() {
+    var host = $('btnS2Run').parentNode;
+    if (!host) return;
+    if (!$('btnS2Flag')) {
+      var b1 = document.createElement('button');
+      b1.className = 'btn btn-ghost btn-sm'; b1.id = 'btnS2Flag'; b1.textContent = '전송여부 일괄 체크';
+      b1.onclick = async function () {
+        busy(b1, true);
+        try { var d = await api('stage2_flag', { month: $('month').value, on: true }); log(d.summary, 'ok'); toast(d.summary, 'ok'); }
+        catch (e) { toast(e.message, 'err'); }
+        busy(b1, false, '전송여부 일괄 체크');
+      };
+      host.appendChild(b1);
+    }
+    if (!$('btnExcelChk')) {
+      var b2 = document.createElement('button');
+      b2.className = 'btn btn-ghost btn-sm'; b2.id = 'btnExcelChk'; b2.textContent = '엑셀 기록 확인';
+      b2.onclick = async function () {
+        busy(b2, true);
+        try {
+          var d = await api('excel_preview', {});
+          var h = '<div class="note info"><b>엑셀업로드양식 기록 상태</b> — ' + esc(d.summary) +
+            (d.sheetUrl ? '<br><a href="' + esc(d.sheetUrl) + '" target="_blank" rel="noopener">시트 열기</a>' : '') + '</div>';
+          h += table([
+            { t: '행', k: '_r', num: 1, raw: 1 }, { t: '사업자번호', k: 'bizNo' },
+            { t: '사업장명', k: 'businessName', mid: 1 }, { t: '대표자', k: 'ceo' },
+            { t: '공급가액', k: '_s', num: 1, raw: 1 }, { t: '세액', k: '_t', num: 1, raw: 1 },
+            { t: '수량', k: '_q', num: 1, raw: 1 }, { t: '합계', k: '_b', num: 1, raw: 1 }
+          ], (d.rows || []).map(function (r) {
+            return { _r: r.row, bizNo: r.bizNo, businessName: r.businessName, ceo: r.ceo,
+                     _s: won(r.supply), _t: won(r.tax), _q: num(r.qty), _b: won(r.total) };
+          }), '아직 기록된 행이 없습니다. 2단계를 실행하세요.');
+          $('s2Out').innerHTML = h;
+          decoration();
+        } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+        busy(b2, false, '엑셀 기록 확인');
+      };
+      host.appendChild(b2);
+    }
+  })();
+
+  function decoration() { decorateTables($('s2Out')); }
+
+  /* ---------- 5) 3단계: v4 ---------- */
+  $('btnS3').onclick = async function () {
+    var ok = await confirmBox('최종 확정',
+      '예외를 반영해 엑셀업로드양식 A7:BG140 을 리셋 후 다시 기록하고, 발행이력·월별 이슈사항 정리를 남깁니다.\n\n진행할까요?', '확정');
+    if (!ok) return;
+    busy(this, true);
+    try {
+      var d = await api('stage3_final', { month: $('month').value, execute: true });
+      renderStage3(d); decorateTables($('s3Out'));
+      log('3단계 확정: ' + d.summary, d.verdict === '통과' ? 'ok' : 'warn');
+      toast('최종 확정 완료 · 엑셀 ' + ((d.excel || {}).rowCount || 0) + '행', 'ok');
+      if (d.excel && d.excel.checked === false) toast('엑셀 기록 확인 실패 — 시트 보호/권한을 확인하세요.', 'err');
+      loadExceptions(true);
+    } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+    busy(this, false, '최종 확정 + 시트 기록');
+  };
+
+  $('btnS3Prev').onclick = async function () {
+    busy(this, true);
+    try {
+      var d = await api('stage3_final', { month: $('month').value, execute: false });
+      renderStage3(d); decorateTables($('s3Out'));
+      log('3단계 미리보기: ' + d.summary, 'ok');
+    } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+    busy(this, false, '미리보기 (변경 없음)');
+  };
+
+  /* CSV 내려받기 → 엑셀 시트 바로 열기 안내로 보강 */
+  $('btnDl').onclick = async function () {
+    busy(this, true);
+    try {
+      var d = await api('sheet_urls', {});
+      if (d.excel) {
+        window.open(d.excel, '_blank');
+        log('엑셀업로드양식 시트 열기: ' + d.excel, 'ok');
+        toast('엑셀업로드양식 시트를 새 탭에서 열었습니다. 파일 → 다운로드 → xlsx 로 저장해 홈택스에 업로드하세요.', 'ok');
+      } else { toast('시트 URL을 가져오지 못했습니다: ' + (d.excelError || ''), 'err'); }
+    } catch (e) { toast(e.message, 'err'); }
+    busy(this, false, '엑셀 파일 열기');
+  };
+
+  /* ---------- 6) 예외: 등록 즉시 반영 + 이월 정산 ---------- */
+  $('btnExSave').onclick = async function () {
+    var type = $('exType').value;
+    var client = $('exClient').value.trim();
+    var numVal = $('exNum').value === '' ? null : Number($('exNum').value);
+    var ratio = $('exRatio').value === '' ? null : Number($('exRatio').value);
+    if (!client) { toast('거래처를 선택하세요.', 'err'); $('exClient').focus(); return; }
+    if (type === 'EXCLUDE_PAGE' && !$('exPage').value.trim()) { toast('제외할 납품건을 선택하세요.', 'err'); return; }
+    if ((type === 'SET_QTY') && numVal === null) { toast('수량을 입력하세요.', 'err'); return; }
+    if ((type === 'SET_AMOUNT' || type === 'ADD_AMOUNT') && numVal === null) { toast('금액을 입력하세요.', 'err'); return; }
+    if (type === 'SET_QTY_RATIO' && !ratio) { toast('비율을 입력하세요. (예: 0.6667)', 'err'); return; }
+    busy(this, true);
+    try {
+      var d = await api('exceptions_save', {
+        month: $('month').value, type: type, clientName: client,
+        pageId: $('exPage').value.trim(),
+        qty: (type === 'SET_QTY') ? numVal : null,
+        amount: (type === 'SET_AMOUNT' || type === 'ADD_AMOUNT') ? numVal : null,
+        ratio: (type === 'SET_QTY_RATIO') ? ratio : null,
+        reason: $('exReason').value.trim()
+      });
+      log('예외 등록 완료: ' + (EX_NAME[type] || type) + ' / ' + client, 'ok');
+      toast('예외 ' + (d.ids || []).length + '건 등록 — 표에 즉시 반영됩니다.', 'ok');
+      $('exPage').value = ''; $('exNum').value = ''; $('exRatio').value = ''; $('exReason').value = '';
+      await loadExceptions(true);
+      decorateTables($('exOut'));
+    } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+    busy(this, false, '예외 등록');
+  };
+
+  /* 행 수정 패널 등록도 동일하게 즉시 반영 */
+  $('btnRowSave').onclick = async function () {
+    var client = $('reClient').textContent;
+    var type = $('reType').value;
+    var val = $('reValue').value === '' ? null : Number($('reValue').value);
+    var reason = $('reReason').value.trim();
+    if (type === 'SET_QTY' && val === null) { toast('수량을 입력하세요.', 'err'); return; }
+    if ((type === 'SET_AMOUNT' || type === 'ADD_AMOUNT') && val === null) { toast('금액을 입력하세요.', 'err'); return; }
+    if (type === 'SET_QTY_RATIO' && val === null) { toast('비율을 입력하세요.', 'err'); return; }
+    busy(this, true);
+    try {
+      var d = await api('exceptions_save', {
+        month: $('month').value, type: type, clientName: client, pageId: '',
+        qty: type === 'SET_QTY' ? val : null,
+        amount: (type === 'SET_AMOUNT' || type === 'ADD_AMOUNT') ? val : null,
+        ratio: type === 'SET_QTY_RATIO' ? val : null,
+        reason: reason || '행 수정에서 등록'
+      });
+      log('행 수정 → 예외 등록: ' + (EX_NAME[type] || type) + ' / ' + client, 'ok');
+      toast('예외 등록 완료 — 표에 즉시 반영됩니다.', 'ok');
+      $('rowEditBar').style.display = 'none';
+      Array.prototype.forEach.call(document.querySelectorAll('tr.editing'), function (tr) { tr.classList.remove('editing'); });
+      await loadExceptions(true);
+      decorateTables($('exOut'));
+    } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+    busy(this, false, '예외 등록');
+  };
+
+  /* 이월(보류) 정산 UI 삽입 */
+  (function addCarryUI() {
+    var host = $('exOut');
+    if (!host || !host.parentNode) return;
+    var box = document.createElement('div');
+    box.id = 'carryBox';
+    box.style.marginTop = '10px';
+    var anchor = document.getElementById('rowEditBar');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    else host.parentNode.insertBefore(box, host);
+    box.innerHTML = '<div class="note info" style="margin:0">' +
+      '<b>이월 발행 정산 (지난달 보류분)</b> — 실제 발행 금액을 입력하면 이번 달 엑셀에 포함되고, 지난달 발행률도 함께 갱신됩니다.' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">' +
+      '<select id="carrySel" style="font-family:inherit;font-size:12px;padding:7px 9px;border-radius:9px;border:1px solid var(--line-2);min-width:220px"><option value="">불러오는 중…</option></select>' +
+      '<input id="carryQty" type="number" placeholder="실제 수량" style="width:110px;font-family:inherit;font-size:12px;padding:7px 9px;border-radius:9px;border:1px solid var(--line-2)">' +
+      '<input id="carryAmt" type="number" placeholder="실제 발행금액" style="width:150px;font-family:inherit;font-size:12px;padding:7px 9px;border-radius:9px;border:1px solid var(--line-2)">' +
+      '<input id="carryReason" type="text" placeholder="사유(선택)" style="flex:1;min-width:130px;font-family:inherit;font-size:12px;padding:7px 9px;border-radius:9px;border:1px solid var(--line-2)">' +
+      '<button class="btn btn-primary btn-sm" id="btnCarry">이월 정산 등록</button>' +
+      '</div><div id="carryList" style="margin-top:8px"></div></div>';
+    loadCarry();
+    $('btnCarry').onclick = async function () {
+      var opt = $('carrySel');
+      var v = opt.value;
+      if (!v) { toast('정산할 이월 건을 선택하세요.', 'err'); return; }
+      var parts = v.split('|');
+      var amt = $('carryAmt').value === '' ? 0 : Number($('carryAmt').value);
+      if (!amt) { toast('실제 발행금액을 입력하세요.', 'err'); return; }
+      busy(this, true);
+      try {
+        var d = await api('carry_issue', {
+          month: $('month').value, originMonth: parts[0], clientName: parts[1],
+          qty: $('carryQty').value === '' ? null : Number($('carryQty').value),
+          amount: amt, reason: $('carryReason').value.trim()
+        });
+        log(d.summary, 'ok'); toast(d.summary, 'ok');
+        $('carryAmt').value = ''; $('carryQty').value = ''; $('carryReason').value = '';
+        loadCarry(); loadExceptions(true);
+      } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+      busy(this, false, '이월 정산 등록');
+    };
+  })();
+
+  async function loadCarry() {
+    try {
+      var d = await api('carry_list', { month: $('month').value });
+      var rows = d.rows || [];
+      var sel = $('carrySel');
+      if (!sel) return;
+      sel.innerHTML = rows.length
+        ? '<option value="">이월 건 선택 (총 ' + rows.length + '건)</option>' + rows.map(function (r) {
+            return '<option value="' + esc(r.originMonth + '|' + r.clientName) + '">' + esc(r.originMonth + ' · ' + r.clientName + ' · 최초 ' + won(r.originAmount)) + '</option>';
+          }).join('')
+        : '<option value="">미정산 이월 건 없음</option>';
+      var host = $('carryList');
+      if (host) {
+        host.innerHTML = table([
+          { t: '원월', k: 'originMonth' }, { t: '거래처', k: 'clientName', mid: 1 },
+          { t: '사업자번호', k: 'regNo' }, { t: '최초 보류금액', k: '_a', num: 1, raw: 1 },
+          { t: '사유', k: 'reason', mid: 1 }
+        ], rows.map(function (r) {
+          return { originMonth: r.originMonth, clientName: r.clientName, regNo: r.regNo || '-', _a: won(r.originAmount), reason: r.reason || '-' };
+        }), '미정산 이월(보류) 건이 없습니다.');
+        decorateTables(host);
+      }
+    } catch (e) { log('이월 목록 조회 실패: ' + e.message, 'warn'); }
+  }
+  window.loadCarry = loadCarry;
+
+  /* 집계월 변경 시 이월 목록도 갱신 */
+  $('month').addEventListener('change', function () { loadCarry(); });
+
+  /* 최초 1회: 이월 목록/예외표 장식 */
+  setTimeout(function () { loadCarry(); decorateTables($('exOut')); }, 1200);
+})();
+</script>
+
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
