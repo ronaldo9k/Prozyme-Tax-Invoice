@@ -202,6 +202,55 @@ tr.editing td{background:#FFF9E6!important}
 .rowedit-note{font-size:12px;color:var(--warn);font-weight:800}
 .rowedit-bar input[type=number]{font-family:inherit;font-size:12px;padding:6px 8px;border-radius:8px;
   border:1px solid var(--line-2);width:120px}
+/* ===================== [v6.0] 상단 툴바 · 단계 내비 · 매뉴얼 전용 화면 ===================== */
+.toolbar{position:sticky; top:0; z-index:70; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  padding:9px 11px; margin:0 0 14px; border-radius:13px;
+  background:rgba(255,255,255,.95); backdrop-filter:blur(12px) saturate(140%);
+  border:1px solid var(--line); box-shadow:0 12px 28px -20px rgba(15,23,42,.75)}
+.toolbar .tb-sep{width:1px; height:22px; background:var(--line-2); margin:0 2px}
+.navbtn{font-family:inherit; font-size:11.8px; font-weight:800; letter-spacing:-.01em; cursor:pointer;
+  padding:7px 11px; border-radius:9px; border:1px solid var(--line-2); background:#fff; color:var(--ink-2);
+  display:inline-flex; align-items:center; gap:5px; transition:all .16s}
+.navbtn:hover{border-color:#94A3B8; background:#F8FAFD}
+.navbtn i{font-style:normal; font-variant-numeric:tabular-nums; font-weight:900; color:var(--brand)}
+.navbtn.on{background:linear-gradient(135deg,#1E5EFF,#3B82F6); border-color:transparent; color:#fff;
+  box-shadow:0 8px 18px -10px rgba(30,94,255,.9)}
+.navbtn.on i{color:#DCE9FF}
+/* 핵심 5개 수치 — 다른 버튼과 다르게 음영/입체로 부각 */
+.flow .fstep{position:relative; overflow:hidden; border:1px solid #D8E4F6;
+  background:linear-gradient(160deg,#FFFFFF 0%,#F3F8FF 100%);
+  box-shadow:0 10px 22px -18px rgba(15,23,42,.8), inset 0 1px 0 #fff}
+.flow .fstep::before{content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:linear-gradient(180deg,#1E5EFF,#7EB0FF)}
+.flow .fstep .s{color:#33507A; font-weight:850}
+.flow .fstep .a{color:#54708F}
+.flow .fstep:nth-child(1)::before{background:linear-gradient(180deg,#1E5EFF,#7EB0FF)}
+.flow .fstep:nth-child(2)::before{background:linear-gradient(180deg,#0E7490,#7DD3E8)}
+.flow .fstep:nth-child(3)::before{background:linear-gradient(180deg,#B45309,#F2CF8B)}
+.flow .fstep:nth-child(4)::before{background:linear-gradient(180deg,#B3261E,#F3B7B1)}
+.flow .fstep:nth-child(5)::before{background:linear-gradient(180deg,#0F7A3D,#A7E0BF)}
+/* 매뉴얼 전용 화면 */
+.step.manual-page{display:none}
+.step.manual-page.on{display:block; position:fixed; inset:0; z-index:130; margin:0; border-radius:0;
+  overflow:auto; background:#fff; box-shadow:none}
+.step.manual-page.on .step-hd{position:sticky; top:0; z-index:2; background:linear-gradient(180deg,#FCFDFF,#F4F8FD)}
+.step.manual-page.on .step-bd{max-width:1080px; margin:0 auto; padding:20px 20px 80px}
+/* 보류(발행 유보) 대기 패널 */
+.hold-panel{margin:12px 0 4px; padding:12px 13px; border-radius:12px;
+  background:linear-gradient(180deg,#FFFBF2,#FFF7E8); border:1px solid var(--warn-line)}
+.hold-panel h3{margin:0 0 4px; font-size:12.9px; font-weight:850; color:#8A4B08;
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.hold-panel .sub{margin:0 0 9px; font-size:11.5px; color:#8A5A28; line-height:1.6}
+.hold-row{display:flex; gap:7px; flex-wrap:wrap; align-items:center}
+.hold-panel select,.hold-panel input{font-family:inherit; font-size:12px; padding:7px 9px; border-radius:9px;
+  border:1px solid var(--line-2); background:#fff}
+.hold-panel select{min-width:280px; flex:1 1 280px}
+.hold-panel input[type=number]{width:132px}
+.hold-panel input[type=text]{flex:1 1 150px; min-width:130px}
+.hold-snap{font-size:11.6px; color:#8A4B08; background:#fff; border:1px dashed var(--warn-line);
+  border-radius:9px; padding:6px 9px; margin-top:8px; font-weight:700}
+.hold-flag{display:inline-block; padding:1px 7px; border-radius:999px; font-size:10.5px; font-weight:850;
+  background:#FFF1D6; color:#8A4B08; border:1px solid var(--warn-line)}
 </style>
 </head>
 <body>
@@ -226,14 +275,29 @@ tr.editing td{background:#FFF9E6!important}
 
 <main class="wrap">
 
-  <!-- [v4.0] 사용 매뉴얼 (상단 고정) -->
-  <section class="step" id="manualSec">
+  <!-- ===================== [v6.0] 상단 컨트롤 바 (추가) ===================== -->
+  <div class="toolbar" id="topToolbar">
+    <button class="btn btn-ghost btn-sm" id="btnManualOpen" type="button">📘 사용 매뉴얼</button>
+    <button class="btn btn-ghost btn-sm" id="btnSheetOpen" type="button">📊 컨트롤타워 시트 열기</button>
+    <button class="btn btn-ghost btn-sm" id="btnCollapseTop" type="button">모두 접기 / 펼치기</button>
+    <div class="tb-sep"></div>
+    <button class="navbtn" type="button" data-goto="0"><i>0</i> 출고 스냅샷</button>
+    <button class="navbtn" type="button" data-goto="1"><i>1</i> 세금계산서 DB</button>
+    <button class="navbtn" type="button" data-goto="2"><i>2</i> 엑셀 초안</button>
+    <button class="navbtn" type="button" data-goto="E"><i>E</i> 예외 처리</button>
+    <button class="navbtn" type="button" data-goto="3"><i>3</i> 최종 발행</button>
+    <button class="navbtn" type="button" data-goto="R"><i>R</i> 발행률 리포트</button>
+  </div>
+
+  <!-- [v4.0] 사용 매뉴얼 (v6.0: 상단 버튼으로 여는 전용 화면) -->
+  <section class="step manual-page" id="manualSec">
     <div class="step-hd">
       <div class="step-no">?</div>
       <div class="step-tt">
-        <h2>사용 매뉴얼 <span class="badge b-info">언제든 펼쳐보기</span></h2>
-        <p>6단계 순서만 지키면 됩니다. 각 단계는 헤더를 눌러 접고 펼 수 있습니다.</p>
+        <h2>사용 매뉴얼 <span class="badge b-info">상단 버튼으로 열고 닫기</span></h2>
+        <p>6단계 순서만 지키면 됩니다. 이 화면은 상단 [📘 사용 매뉴얼] 버튼으로 열고 [닫기]로 닫습니다.</p>
       </div>
+      <button class="btn btn-ghost btn-sm" id="btnManualClose" type="button">닫기 ✕</button>
       <div class="chev" title="접기/펼치기"><span class="a">▼</span></div>
     </div>
     <div class="step-bd">
@@ -318,7 +382,7 @@ tr.editing td{background:#FFF9E6!important}
       <div class="step-no">E</div>
       <div class="step-tt">
         <h2>예외 처리 <span class="badge b-warn">보류·제외·수정·추가</span></h2>
-        <p>보류(다음 달), 발행 제외, 수량 조정(2/3 버림 등), 금액 수정, 추가 발행을 장부에 남겨 3단계에 자동 반영합니다.</p>
+        <p><b>발행 보류</b>는 다음 달로 넘기는 것이 아니라 <b>이번 달 발행에서 빼고 대기</b>시키는 것입니다. 익월 10일 이전 거래처 확정을 받으면 [보류 대기]에서 <b>최초 스냅샷 그대로</b> 불러와 수량·금액만 지정해 발행합니다. 그 외 제외·수량 조정·금액 수정·추가 발행도 장부에 남겨 3단계에 자동 반영합니다.</p>
       </div>
       <div class="chev" title="접기/펼치기"><span class="a">▼</span></div>
     </div>
@@ -327,7 +391,7 @@ tr.editing td{background:#FFF9E6!important}
         <div class="field">
           <label for="exType">유형</label>
           <select id="exType">
-            <option value="DEFER">발행 보류(다음 달로)</option>
+            <option value="HOLD">발행 보류 (이번 달 발행 유보 → 익월 발행)</option>
             <option value="EXCLUDE_CLIENT">거래처 전체 제외</option>
             <option value="EXCLUDE_PAGE">납품건 1건 제외</option>
             <option value="SET_QTY">수량 지정 (예: 2/3 발행)</option>
@@ -375,7 +439,7 @@ tr.editing td{background:#FFF9E6!important}
           <option value="SET_AMOUNT">금액 수정(총액)</option>
           <option value="ADD_AMOUNT">금액 추가</option>
           <option value="SET_QTY_RATIO">수량 비율</option>
-          <option value="DEFER">발행 보류(다음 달로)</option>
+          <option value="HOLD">발행 보류 (이번 달 유보 → 익월 발행)</option>
           <option value="EXCLUDE_CLIENT">거래처 전체 제외</option>
           <option value="EXCLUDE_PAGE">납품건 제외(자동 분해)</option>
         </select>
@@ -384,6 +448,21 @@ tr.editing td{background:#FFF9E6!important}
         <button class="btn btn-primary btn-sm" id="btnRowSave">예외 등록</button>
         <button class="btn btn-ghost btn-sm" id="btnRowClose">닫기</button>
       </div>
+      <!-- ===================== [v6.0] 보류(발행 유보) 대기 → 익월 발행 ===================== -->
+      <div class="hold-panel" id="holdPanel">
+        <h3>⏸ 보류 대기 <span class="badge b-warn">이번 달 발행 제외 · 익월 발행 예정</span></h3>
+        <p class="sub">당월 말일 기준으로 발행하지 않고 대기 중인 건입니다. 익월 10일 이전 거래처 확정이 오면 아래에서 <b>최초 스냅샷을 그대로</b> 불러와 수량·금액만 고쳐 발행하세요. 해소 이력(최초값 → 실제값)은 그대로 남고, 원월 발행률에도 자동 반영됩니다.</p>
+        <div class="hold-row">
+          <select id="holdSel"><option value="">불러오는 중…</option></select>
+          <input id="holdQty" type="number" placeholder="실제 발행수량">
+          <input id="holdAmt" type="number" placeholder="실제 발행금액">
+          <input id="holdReason" type="text" placeholder="사유(선택)">
+          <button class="btn btn-primary btn-sm" id="btnHoldResolve" type="button">보류 → 익월 발행 처리</button>
+        </div>
+        <div class="hold-snap" id="holdSnap">보류 건을 선택하면 최초 스냅샷(출고건/박스/금액)이 표시됩니다.</div>
+        <div id="holdList" style="margin-top:9px"></div>
+      </div>
+
       <p class="hint">현재 이번 달 거래처의 출고/발행/차액은 아래 표에서 바로 확인할 수 있습니다. 예외 등록 전에 숫자를 보고 판단하세요.</p>
       <div id="exOut" style="margin-top:10px"></div>
     </div>
@@ -466,7 +545,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbykhVRnVl_FD2SeM-52CzpXnicAZD_reXooLabaSC4oofKWxfD3-qKKRSnrrhmGV9c/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyxBahYuebCOUTReSf2vu2GnEXTcxrQcedFumq4j5bgSiRghL_eQC1h2lg9J6zNse9l/exec';
 const TIMEOUT_MS = 360000;
 
 const $ = function (id) { return document.getElementById(id); };
@@ -931,7 +1010,7 @@ $('btnS2Run').onclick = async function () {
  * 예외 처리
  * ===================================================================== */
 const EX_NAME = {
-  DEFER: '발행 보류', EXCLUDE_CLIENT: '거래처 제외', EXCLUDE_PAGE: '납품건 제외',
+  HOLD: '발행 보류(유보)', DEFER: '발행 보류(유보)', EXCLUDE_CLIENT: '거래처 제외', EXCLUDE_PAGE: '납품건 제외',
   SET_QTY: '수량 지정', SET_QTY_RATIO: '수량 비율', SET_AMOUNT: '금액 수정', ADD_AMOUNT: '금액 추가'
 };
 
@@ -1473,6 +1552,8 @@ loadExceptions(true);
         '<tr><td>엑셀업로드양식이 비어 보인다</td><td class="mid">2단계 또는 3단계를 실행한 뒤 [엑셀 기록 확인]을 누르세요. 매번 A7:BG140을 리셋하고 다시 기록합니다.</td></tr>' +
         '<tr><td>예외를 등록했는데 숫자가 그대로다</td><td class="mid">등록 후 표가 즉시 다시 계산됩니다. 3단계 미리보기에서 최종 반영을 확인하세요.</td></tr>' +
         '<tr><td>지난달 보류 건은?</td><td class="mid">[E 예외 처리] → [이월 발행 정산]에서 실제 발행 금액을 입력하면 이번 달 엑셀에 포함되고 지난달 발행률도 함께 갱신됩니다.</td></tr>' +
+        '<tr><td>발행 보류는 무슨 뜻인가요?</td><td class="mid">다음 달로 넘기는 것이 아니라 <b>이번 달 발행에서 빼고 대기</b>시키는 것입니다. 말일 마감 시 홈택스에 올리지 않고, 익월 10일 이전 거래처 확정이 오면 [보류 대기]에서 최초 스냅샷(출고건/박스/금액)을 그대로 불러와 수량·금액만 고쳐 발행합니다. 해소 이력(최초값 → 실제값)은 예외조정 시트에 남고 원월 발행률에도 반영됩니다.</td></tr>' +
+        '<tr><td>집계월이 납품일자와 다른 이유는?</td><td class="mid">집계월은 노션 수식이 <b>업체계산서발행요청일 → 납품일자</b> 순서로 계산합니다. 이 앱은 그 수식 결과를 <b>그대로</b> 사용하며 납품일자로 월을 다시 계산하지 않습니다. 그래서 다음 달 발행 요청 업체는 요청일 기준 월로 자동 집계됩니다.</td></tr>' +
         '</tbody></table></div>';
       $('manualBody').innerHTML = h;
       decorateTables($('manualBody'));
@@ -1787,6 +1868,216 @@ loadExceptions(true);
 })();
 </script>
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+
+<script>
+/* =====================================================================
+ * [v6.0] 상단 툴바 · 단계 내비게이션 · 매뉴얼 전용 화면 · 보류(발행 유보) 대기
+ *  - 기존 v4.0 스크립트/함수는 그대로 두고, 여기서 UI만 덧입힙니다(추가 전용).
+ * ===================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------- 1) 매뉴얼을 별도 화면으로 ---------- */
+  var manualSec = document.getElementById('manualSec');
+  if (manualSec) manualSec.classList.add('manual-page');
+
+  function openManual() {
+    if (!manualSec) return;
+    manualSec.classList.add('on');
+    manualSec.classList.remove('collapsed');
+    document.body.style.overflow = 'hidden';
+    manualSec.scrollTop = 0;
+  }
+  function closeManual() {
+    if (!manualSec) return;
+    manualSec.classList.remove('on');
+    document.body.style.overflow = '';
+  }
+  var bOpen = document.getElementById('btnManualOpen');
+  if (bOpen) bOpen.addEventListener('click', openManual);
+  var bClose = document.getElementById('btnManualClose');
+  if (bClose) bClose.addEventListener('click', closeManual);
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') closeManual();
+  });
+
+  /* ---------- 2) 단계 내비게이션 (0 / 1 / 2 / E / 3 / R) ---------- */
+  var allSteps = Array.prototype.slice.call(document.querySelectorAll('.step'))
+    .filter(function (el) { return el.id !== 'manualSec'; });
+  var NAV_ORDER = ['0', '1', '2', 'E', '3', 'R'];
+
+  function gotoStep(key) {
+    var idx = NAV_ORDER.indexOf(String(key));
+    if (idx < 0 || !allSteps[idx]) return;
+    var target = allSteps[idx];
+
+    /* 집중 모드: 대상만 펼치고 나머지는 접습니다(각 섹션 헤더로 언제든 다시 펼침). */
+    allSteps.forEach(function (el) {
+      el.classList.toggle('collapsed', el !== target);
+    });
+    target.classList.remove('collapsed');
+    try { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { target.scrollIntoView(); }
+
+    Array.prototype.forEach.call(document.querySelectorAll('.navbtn'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-goto') === String(key));
+    });
+    var t = target.querySelector('.step-tt h2');
+    if (window.log) log('이동: ' + (t ? t.textContent.trim().split('\n')[0] : key) + ' (다른 단계는 접힘)');
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.navbtn'), function (b) {
+    b.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      gotoStep(b.getAttribute('data-goto'));
+    });
+  });
+
+  /* ---------- 3) 상단 '모두 접기 / 펼치기' (기존 R 섹션 버튼과 별개로 추가) ---------- */
+  var bTop = document.getElementById('btnCollapseTop');
+  if (bTop) {
+    bTop.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      var collapsed = 0;
+      allSteps.forEach(function (el) { if (el.classList.contains('collapsed')) collapsed++; });
+      var toCollapse = collapsed < allSteps.length / 2;
+      allSteps.forEach(function (el) { el.classList.toggle('collapsed', toCollapse); });
+      Array.prototype.forEach.call(document.querySelectorAll('.btn-sec-collapse'), function (b) {
+        b.textContent = toCollapse ? '펼치기' : '접기';
+      });
+      bTop.textContent = toCollapse ? '모두 펼치기' : '모두 접기 / 펼치기';
+      if (window.log) log(toCollapse ? '모든 세션 접음' : '모든 세션 펼침');
+    });
+  }
+
+  /* ---------- 4) 구글시트 바로가기 (URL은 GAS가 내려줍니다) ---------- */
+  var bSheet = document.getElementById('btnSheetOpen');
+  if (bSheet) {
+    bSheet.addEventListener('click', async function () {
+      var btn = this;
+      var label = btn.textContent;
+      btn.disabled = true; btn.textContent = '여는 중…';
+      try {
+        var d = await api('sheet_urls', {});
+        if (d.tower) { window.open(d.tower, '_blank'); log('컨트롤타워 시트 열기: ' + d.tower, 'ok'); }
+        else { toast('시트 URL을 가져오지 못했습니다: ' + (d.towerError || ''), 'err'); }
+      } catch (e) { toast(e.message, 'err'); }
+      btn.disabled = false; btn.textContent = label;
+    });
+  }
+
+  /* ---------- 5) 보류(발행 유보) 대기 → 익월 발행 ---------- */
+  var holdRows = [];
+
+  function holdOptionText(r) {
+    var parts = [];
+    parts.push(r.originMonth + ' · ' + r.clientName);
+    if (r.snapQty !== null && r.snapQty !== undefined) parts.push(num(r.snapQty) + '박스');
+    if (r.snapAmount !== null && r.snapAmount !== undefined) parts.push(won(r.snapAmount));
+    return parts.join(' / ');
+  }
+
+  function renderHoldSnap() {
+    var sel = document.getElementById('holdSel');
+    var box = document.getElementById('holdSnap');
+    if (!sel || !box) return;
+    var r = holdRows.filter(function (x) { return x.id === sel.value; })[0];
+    if (!r) { box.textContent = '보류 건을 선택하면 최초 스냅샷(출고건/박스/금액)이 표시됩니다.'; return; }
+    box.innerHTML = '최초 스냅샷 · 출고 <b>' + num(r.snapPages === null ? 0 : r.snapPages) + '건</b> / ' +
+      '<b>' + num(r.snapQty === null ? 0 : r.snapQty) + '박스</b> / <b>' + won(r.snapAmount) + '</b>' +
+      ' <span class="hold-flag">' + esc(r.originMonth) + ' 보류</span>' +
+      (r.reason ? ' · 사유: ' + esc(r.reason) : '');
+  }
+
+  async function loadHold() {
+    var sel = document.getElementById('holdSel');
+    var host = document.getElementById('holdList');
+    if (!sel) return;
+    var month = document.getElementById('month').value;
+    if (!month) return;
+    try {
+      var d = await api('hold_list', { month: month });
+      holdRows = d.rows || [];
+      sel.innerHTML = holdRows.length
+        ? '<option value="">보류 대기 ' + holdRows.length + '건 — 선택하세요</option>' +
+          holdRows.map(function (r) { return '<option value="' + esc(r.id) + '">' + esc(holdOptionText(r)) + '</option>'; }).join('')
+        : '<option value="">보류 대기 건이 없습니다</option>';
+      var t = d.totals || {};
+      if (host) {
+        host.innerHTML = holdRows.length ? table([
+          { t: '보류월', k: 'originMonth' },
+          { t: '거래처', k: 'clientName', mid: 1 },
+          { t: '사업자번호', k: 'regNo' },
+          { t: '최초 출고건', k: '_p', num: 1, raw: 1 },
+          { t: '최초 박스', k: '_q', num: 1, raw: 1 },
+          { t: '최초 금액', k: '_a', num: 1, raw: 1 },
+          { t: '사유', k: 'reason', mid: 1 }
+        ], holdRows.map(function (r) {
+          return {
+            originMonth: r.originMonth, clientName: r.clientName, regNo: r.regNo || '-',
+            _p: num(r.snapPages === null ? 0 : r.snapPages), _q: num(r.snapQty === null ? 0 : r.snapQty),
+            _a: won(r.snapAmount), reason: r.reason || '-'
+          };
+        }), '보류 대기 건이 없습니다.') +
+        '<p class="hint">합계 · ' + num(t.count || 0) + '건 / ' + num(t.qty || 0) + '박스 / ' + won(t.amount || 0) + '</p>'
+        : '';
+        if (window.decorateTables) decorateTables(host);
+      }
+      renderHoldSnap();
+    } catch (e) {
+      sel.innerHTML = '<option value="">보류 목록 조회 실패</option>';
+      if (window.log) log('보류 대기 조회 실패: ' + e.message, 'warn');
+    }
+  }
+  window.loadHold = loadHold;
+
+  var sel = document.getElementById('holdSel');
+  if (sel) sel.addEventListener('change', renderHoldSnap);
+
+  var bHold = document.getElementById('btnHoldResolve');
+  if (bHold) {
+    bHold.addEventListener('click', async function () {
+      var s1 = document.getElementById('holdSel');
+      var r = holdRows.filter(function (x) { return x.id === s1.value; })[0];
+      if (!r) { toast('보류 건을 선택하세요.', 'err'); return; }
+      var qtyEl = document.getElementById('holdQty');
+      var amtEl = document.getElementById('holdAmt');
+      var q = qtyEl.value === '' ? null : Number(qtyEl.value);
+      var a = amtEl.value === '' ? null : Number(amtEl.value);
+      if (a === null && (r.snapAmount === null || r.snapAmount === undefined)) {
+        toast('실제 발행금액을 입력하세요.', 'err'); amtEl.focus(); return;
+      }
+      var ok = await confirmBox('보류 → 익월 발행 처리',
+        r.originMonth + ' 보류 건을 ' + document.getElementById('month').value + '에 발행 처리합니다.\n' +
+        '최초 스냅샷: ' + num(r.snapQty || 0) + '박스 / ' + won(r.snapAmount) + '\n' +
+        '최초 스냅샷은 그대로 보존되고, 입력한 수량·금액과의 차이가 이력에 함께 기록됩니다.\n\n진행할까요?', '발행 처리');
+      if (!ok) return;
+      var label = this.textContent;
+      this.disabled = true; this.textContent = '처리 중…';
+      try {
+        var res = await api('hold_resolve', {
+          month: document.getElementById('month').value,
+          originMonth: r.originMonth,
+          clientName: r.clientName,
+          holdId: r.id,
+          qty: q, amount: a,
+          reason: document.getElementById('holdReason').value.trim()
+        });
+        toast(res.summary || '보류 발행 처리 완료', 'ok');
+        log(res.summary || '보류 발행 처리 완료', 'ok');
+        qtyEl.value = ''; amtEl.value = ''; document.getElementById('holdReason').value = '';
+        await loadHold();
+        if (window.loadExceptions) await loadExceptions(true);
+      } catch (e) { toast(e.message, 'err'); log(e.message, 'err'); }
+      this.disabled = false; this.textContent = label;
+    });
+  }
+
+  /* ---------- 6) 초기 실행 ---------- */
+  setTimeout(function () { loadHold(); }, 1400);
+  var mEl = document.getElementById('month');
+  if (mEl) mEl.addEventListener('change', function () { setTimeout(loadHold, 200); });
+})();
+</script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
