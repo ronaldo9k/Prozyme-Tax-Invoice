@@ -545,8 +545,10 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzebAGZd8MizkoIoPGZT_QdgqA-oELU1L-48Y_LKZxGz_ZXRAK3Ar0cGPdgm797WRUa/exec';
-const TIMEOUT_MS = 360000;
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz4uJ1gJ-CRDsEVwBCywbi47nLy6bqlv4TPx7Iv_WfszmKFOQsRaqGfZGpuN5E4k9oz/exec';
+/* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
+   기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
+const TIMEOUT_MS = 300000;
 
 const $ = function (id) { return document.getElementById(id); };
 const won = function (n) {
@@ -1577,12 +1579,35 @@ loadExceptions(true);
     try {
       var prep = await api('stage1_prepare', { month: month, includeUnchecked: inc, retryStuck: true });
       log('1단계 큐 생성: ' + prep.summary, 'ok');
-      if (!prep.queued) { toast('처리할 대상이 없습니다.', 'warn'); busy(btn, false, '1단계 실행'); return; }
+      if (!prep.queued) {
+        toast('처리할 대상이 없습니다. (이미 모두 연동되었거나 집계월/체크박스를 확인하세요)', 'warn');
+        busy(btn, false, '1단계 실행');
+        return;
+      }
 
       $('s1Poll').innerHTML = '<span class="badge b-info">자동 연속 처리 중… 0 / ' + prep.queued + '</span>';
 
-      while (guard++ < 60) {
-        var d = await api('stage1_batch', { month: month, limit: 80, includeUnchecked: inc, retryStuck: true, auto: true });
+      /* =====================================================================
+       * [v7.1 SPEED] 자동 연속 처리 루프 개선
+       *  · 일시 오류(다른 실행이 진행 중 / 서버 일시 오류)는 3회까지 자동 재시도
+       *    → 기존: 한 번만 실패해도 루프가 통째로 중단되어 '이어서 처리'가 끊겼습니다.
+       *  · 커서가 늘지 않으면(무진행) 무한 반복을 멈추고 사유를 표시
+       *  · 서버가 주는 누적값(totals)을 그대로 표시 → 중간에 끊겨도 합계가 정확
+       * ===================================================================== */
+      var lastCursor = -1, stuckLoops = 0, retry = 0;
+      while (guard++ < 400) {
+        var d = null;
+        try {
+          d = await api('stage1_batch', { month: month, limit: 80, includeUnchecked: inc, retryStuck: true, auto: true });
+          retry = 0;
+        } catch (e1) {
+          if (retry++ < 3) {
+            log('배치 일시 실패 — 3초 후 자동 재시도 (' + retry + '/3): ' + e1.message, 'warn');
+            await sleep(3000);
+            continue;
+          }
+          throw e1;
+        }
         d.recon = d.recon || { missingCount: 0, missingQty: 0, missingAmount: 0 };
         d.autoResume = false;
         last = d;
@@ -1591,12 +1616,26 @@ loadExceptions(true);
         totalFailed += (d.counts || {}).failed || 0;
         try { renderStage1(d); } catch (e) {}
         var doneN = (d.cursor || 0);
-        $('s1Poll').innerHTML = '<span class="badge b-info">자동 연속 처리 중… ' + num(doneN) + ' / ' + num(d.total) + '</span>';
+        var cum = d.totals || {};
+        $('s1Poll').innerHTML = '<span class="badge b-info">자동 연속 처리 중… ' + num(doneN) + ' / ' + num(d.total) +
+          ' (누적 생성 ' + num(cum.created || totalCreated) + ')</span>';
         log('1단계 배치: ' + d.summary, (d.counts || {}).failed ? 'warn' : 'ok');
         if (!d.remaining) break;
+        if (doneN <= lastCursor) {
+          stuckLoops++;
+          if (stuckLoops >= 3) {
+            toast('진행이 멈췄습니다 — [자동처리 중지] 후 다시 [1단계 실행]을 눌러주세요.', 'err');
+            log('커서가 증가하지 않아 자동 연속 처리를 중단했습니다.', 'err');
+            break;
+          }
+        } else { stuckLoops = 0; }
+        lastCursor = doneN;
         await sleep(700);
       }
-      $('s1Poll').innerHTML = '<span class="badge b-ok">1단계 완료 — 생성 ' + num(totalCreated) + ' / 치유 ' + num(totalHealed) + '</span>';
+      var cumLast = (last && last.totals) || {};
+      var cCreated = cumLast.created !== undefined ? cumLast.created : totalCreated;
+      var cHealed = cumLast.healed !== undefined ? cumLast.healed : totalHealed;
+      $('s1Poll').innerHTML = '<span class="badge b-ok">1단계 완료 — 생성 ' + num(cCreated) + ' / 치유 ' + num(cHealed) + '</span>';
       toast('1단계 완료 — 생성 ' + totalCreated + '건' + (totalFailed ? ' / 실패 ' + totalFailed + '건' : ''), totalFailed ? 'warn' : 'ok');
       if (last) { last.counts.created = totalCreated; last.counts.healed = totalHealed; last.counts.failed = totalFailed; try { renderStage1(last); } catch (e) {} }
       loadExceptions(true);
