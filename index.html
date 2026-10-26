@@ -581,7 +581,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwbVvCCN-xHPdN8lq_da5l1XbJlb6SLjANuF3RMt8y77_VRL758vJFm4YTtdvTxKQ/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxF-1g-KxsFnYs6LHVKq8WjM0uBlG30_zZ7UuJxwbaQbRvBZxFG2TESC0k3l01Eup8k/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -2351,5 +2351,383 @@ loadExceptions(true);
   window.loadHoldV81 = loadList;
 })();
 </script>
+
+<!-- ===================== [v9.0] UI ADD-ON (추가 전용) ===================== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===================================================================
+   * [v9.0] UI 추가 블록 — 기존 화면/스크립트는 그대로 두고 덧입힙니다.
+   *   1) 유형 목록에 '당월 기발행완료 건' 추가
+   *   2) 납품건 다중 선택(체크박스) 패널
+   *   3) 3단계 누락 검증(recon2) 표시
+   *   4) 4개 리스트 전부에 접기/펼치기 버튼
+   *   5) 보류 대기 + 보류 발행 처리 → '보류 통합 관리' 한 칸으로 정리
+   *   6) 무용지물 '이월 발행 정산' 패널 화면에서 숨김(서버 기능은 유지)
+   * =================================================================== */
+
+  function g(id) { return document.getElementById(id); }
+  function okBadge(same) {
+    return same ? '<span class="badge b-ok">= 같음</span>' : '<span class="badge b-err">≠ 다름</span>';
+  }
+  function n0(v) { return (v === null || v === undefined || v === '') ? 0 : Number(v); }
+
+  /* ---------------------------------------------------------------
+   * 1) 유형 옵션 추가
+   * ------------------------------------------------------------- */
+  var NEW_OPTS = [
+    { v: 'ISSUED_ALREADY', t: '당월 기발행완료 건 (이미 발행한 납품건 — 일괄발행에서 제외, 발행률엔 발행으로 반영)' }
+  ];
+  function addOptions() {
+    ['exType', 'reType'].forEach(function (id) {
+      var sel = g(id);
+      if (!sel) return;
+      NEW_OPTS.forEach(function (o) {
+        var exists = Array.prototype.some.call(sel.options, function (x) { return x.value === o.v; });
+        if (exists) return;
+        var op = document.createElement('option');
+        op.value = o.v; op.textContent = o.t;
+        var last = sel.options[sel.options.length - 1];
+        sel.insertBefore(op, last || null);
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------------
+   * 2) 납품건 다중 선택 패널
+   * ------------------------------------------------------------- */
+  var PAGES = {};
+  var picked = {};
+
+  function pickerBox() {
+    var host = g('v9Picker');
+    if (host) return host;
+    var anchor = g('exPageField');
+    if (!anchor || !anchor.parentNode) return null;
+    host = document.createElement('div');
+    host.id = 'v9Picker';
+    host.className = 'note info';
+    host.style.margin = '6px 0 10px';
+    anchor.parentNode.insertBefore(host, anchor.nextSibling);
+    return host;
+  }
+
+  function renderPicker() {
+    var host = pickerBox();
+    if (!host) return;
+    var client = (g('exClient') && g('exClient').value || '').trim();
+    var type = g('exType') ? g('exType').value : '';
+    var needPage = (type === 'EXCLUDE_PAGE' || type === 'ISSUED_ALREADY' || type === 'HOLD');
+    var list = PAGES[client] || null;
+    if (!client || !list) {
+      host.innerHTML = client
+        ? '<b>납품건 선택</b> — 거래처를 목록에서 고르면 이번 달 납품건이 여기에 표시됩니다.'
+        : '<b>납품건 선택</b> — 먼저 위 [거래처]를 선택하세요.';
+      return;
+    }
+    var rows = list.pages.map(function (p, i) {
+      var id = p.id;
+      var on = !!picked[id];
+      return '<label style="display:flex;gap:8px;align-items:center;padding:5px 6px;border-bottom:1px solid var(--line);font-size:12px">' +
+        '<input type="checkbox" data-v9pg="' + esc(id) + '"' + (on ? ' checked' : '') + '>' +
+        '<span style="min-width:86px">' + esc(p.date || '-') + '</span>' +
+        '<span style="flex:1;min-width:120px">' + esc(p.title || '-') + '</span>' +
+        '<span style="min-width:64px;text-align:right">' + num(p.qty) + '박스</span>' +
+        '<span style="min-width:96px;text-align:right">' + won(p.amount) + '</span>' +
+        (p.url ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">열기</a>' : '') +
+        '</label>';
+    }).join('');
+    var sumQ = 0, sumA = 0, cnt = 0;
+    Object.keys(picked).forEach(function (k) {
+      var p = list.pages.filter(function (x) { return x.id === k; })[0];
+      if (!p) return;
+      cnt++; sumQ += n0(p.qty); sumA += n0(p.amount);
+    });
+    host.innerHTML =
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">' +
+        '<b>납품건 선택</b>' +
+        '<span class="badge b-neutral">' + esc(client) + ' · ' + list.pages.length + '건</span>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="v9PickClear">선택 해제</button>' +
+        '<span class="hint" style="margin:0">체크한 납품건만 예외로 처리됩니다' +
+          (needPage ? ' <b>(이 유형은 체크 필요)</b>' : ' (이 유형은 체크 없이도 등록 가능)') + '</span>' +
+      '</div>' +
+      '<div style="max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff">' + rows + '</div>' +
+      '<p class="hint" style="margin:6px 0 0">선택 합계 · <b>' + cnt + '건</b> / ' + num(sumQ) + '박스 / ' + won(sumA) +
+      ' → 아래 [납품건 ID] 칸에 자동 입력됩니다.</p>';
+
+    Array.prototype.forEach.call(host.querySelectorAll('[data-v9pg]'), function (cb) {
+      cb.onchange = function () {
+        var id = cb.getAttribute('data-v9pg');
+        if (cb.checked) picked[id] = true; else delete picked[id];
+        syncPageField();
+        renderPicker();
+      };
+    });
+    var clr = g('v9PickClear');
+    if (clr) clr.onclick = function () { picked = {}; syncPageField(); renderPicker(); };
+  }
+
+  function syncPageField() {
+    var f = g('exPage');
+    if (f) f.value = Object.keys(picked).join(',');
+  }
+
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  async function loadPages() {
+    var client = (g('exClient') && g('exClient').value || '').trim();
+    var monthEl = g('month');
+    if (!client || !monthEl || !window.api) { renderPicker(); return; }
+    try {
+      var d = await api('client_pages_v9', { month: monthEl.value });
+      PAGES = {};
+      (d.clients || []).forEach(function (c) { PAGES[c.client] = c; });
+      picked = {};
+      renderPicker();
+    } catch (e) { /* 조용히 무시 — 화면 기능이므로 */ }
+  }
+
+  var exClientEl = g('exClient');
+  if (exClientEl) {
+    exClientEl.addEventListener('change', loadPages);
+    exClientEl.addEventListener('blur', function () { if (g('exClient').value.trim()) loadPages(); });
+  }
+  var exTypeEl = g('exType');
+  if (exTypeEl) exTypeEl.addEventListener('change', renderPicker);
+
+  /* 예외 등록 직후 선택 초기화 (기존 버튼 동작은 건드리지 않고 뒤에서 정리) */
+  var btnEx = g('btnExSave');
+  if (btnEx) {
+    btnEx.addEventListener('click', function () {
+      setTimeout(function () { picked = {}; syncPageField(); renderPicker(); }, 1200);
+    });
+  }
+
+  /* ---------------------------------------------------------------
+   * 3) 3단계 누락 검증(recon2) — renderStage3 결과 뒤에 덧붙임
+   * ------------------------------------------------------------- */
+  function recon2Html(d) {
+    var r = d.recon2;
+    if (!r) return '';
+    var p = r.pages || {}, s = r.sum || {}, idn = r.identity || {};
+    var h = '';
+
+    /* ③ 사업자번호없음 · ④ 예외 카드 (0건이던 문제 해결 확인용) */
+    h += '<div class="kpis">' +
+      '<div class="kpi warn"><div class="t">③ 사업자번호없음</div><div class="v">' +
+        num(p.noBiz) + '<span class="u">건</span> (' + num(p.noBizClients) + '곳)</div>' +
+        '<div class="hint" style="margin:2px 0 0">' + num(s.noBizQty) + '박스 · ' + won(s.noBizAmount) + '</div></div>' +
+      '<div class="kpi"><div class="t">④ 예외(제외)</div><div class="v">' +
+        num(p.exc) + '<span class="u">건</span> (' + num(p.excClients) + '곳)</div>' +
+        '<div class="hint" style="margin:2px 0 0">' + num(s.excQty) + '박스 · ' + won(s.excAmount) + '</div></div>' +
+      '<div class="kpi"><div class="t">④ 당월 기발행완료</div><div class="v">' +
+        num(p.already) + '<span class="u">건</span> (' + num(p.alreadyClients) + '곳)</div>' +
+        '<div class="hint" style="margin:2px 0 0">' + num(s.alreadyQty) + '박스 · ' + won(s.alreadyAmount) + '</div></div>' +
+      '<div class="kpi warn"><div class="t">④ 보류(대기)</div><div class="v">' +
+        num(p.defer) + '<span class="u">건</span> (' + num(p.deferClients) + '곳)</div>' +
+        '<div class="hint" style="margin:2px 0 0">' + num(s.deferQty) + '박스 · ' + won(s.deferAmount) + '</div></div>' +
+      '<div class="kpi ok"><div class="t">⑤ 최종발행</div><div class="v">' +
+        num(p.final) + '<span class="u">건</span> / ' + num(p.finalRows) + '행</div>' +
+        '<div class="hint" style="margin:2px 0 0">' + num(s.finalQty) + '박스 · ' + won(s.finalAmount) + '</div></div>' +
+      '</div>';
+
+    /* ① vs ② 비교 */
+    h += '<div class="note info" style="margin-top:8px"><b>① 출고 원본(노션) = ② 세금계산서 DB 확인</b>' +
+      '<div class="tblwrap" style="margin-top:6px"><table><thead><tr>' +
+      '<th>항목</th><th class="num">① 출고 원본</th><th class="num">② 세금계산서 DB</th><th class="num">차이</th><th>판정</th>' +
+      '</tr></thead><tbody>' +
+      (r.rows || []).map(function (x) {
+        var same = Math.abs(n0(x.diff)) < (x.unit === '원' ? 1 : 0.001);
+        return '<tr><td>' + esc(x.key) + '</td>' +
+          '<td class="num">' + (x.unit === '원' ? won(x.src) : num(x.src) + x.unit) + '</td>' +
+          '<td class="num">' + (x.unit === '원' ? won(x.db) : num(x.db) + x.unit) + '</td>' +
+          '<td class="num">' + (x.unit === '원' ? won(x.diff) : num(x.diff) + x.unit) + '</td>' +
+          '<td>' + okBadge(same) + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div></div>';
+
+    /* ⑤ + ③ + ④ = ② 항등식 */
+    var aq = idn.adjQty || 0, aa = idn.adjAmount || 0;
+    function rowOf(label, obj, unit, adj) {
+      var parts = [n0(obj.final), n0(obj.noBiz), n0(obj.exc), n0(obj.already), n0(obj.defer)];
+      var sum = parts.reduce(function (a, b) { return a + b; }, 0) + n0(adj);
+      var total = n0(obj.total);
+      var fmt = function (v) { return unit === '원' ? won(v) : num(v) + unit; };
+      var same = Math.abs(Math.round(sum) - Math.round(total)) < (unit === '원' ? 1 : 0.001);
+      return '<tr><td>' + label + '</td>' +
+        '<td class="num">' + fmt(parts[0]) + '</td>' +
+        '<td class="num">' + fmt(parts[1]) + '</td>' +
+        '<td class="num">' + fmt(parts[2]) + '</td>' +
+        '<td class="num">' + fmt(parts[3]) + '</td>' +
+        '<td class="num">' + fmt(parts[4]) + '</td>' +
+        '<td class="num">' + fmt(adj || 0) + '</td>' +
+        '<td class="num"><b>' + fmt(sum) + '</b></td>' +
+        '<td class="num">' + fmt(total) + '</td>' +
+        '<td>' + okBadge(same) + '</td></tr>';
+    }
+    var passAll = r.pass && r.rows.every(function (x) { return Math.abs(n0(x.diff)) < (x.unit === '원' ? 1 : 0.001); });
+    h += '<div class="note ' + (passAll ? 'ok' : 'warn') + '" style="margin-top:8px">' +
+      '<b>' + (passAll ? '누락 검증 통과 — 모든 칸이 = 입니다.' : '누락 검증: ≠ 칸이 있습니다. 아래 표의 차이를 확인하세요.') + '</b>' +
+      ' (⑤ 최종발행 + ③ 사업자번호없음 + ④ 예외 + ④ 기발행완료 + ④ 보류 = ② 세금계산서 DB)' +
+      '<div class="tblwrap" style="margin-top:6px"><table><thead><tr>' +
+      '<th>기준</th><th class="num">⑤ 최종발행</th><th class="num">③ 번호없음</th><th class="num">④ 제외</th>' +
+      '<th class="num">④ 기발행</th><th class="num">④ 보류</th><th class="num">수량/금액 조정</th>' +
+      '<th class="num">합계</th><th class="num">② DB</th><th>판정</th></tr></thead><tbody>' +
+      rowOf('건수(페이지)', idn.pages || {}, '건', 0) +
+      rowOf('박스', idn.qty || {}, '박스', aq) +
+      rowOf('금액', idn.amount || {}, '원', aa) +
+      '</tbody></table></div>' +
+      (r.problems && r.problems.length
+        ? '<div style="margin-top:6px">' + r.problems.map(function (x) { return '· ' + esc(x); }).join('<br>') + '</div>'
+        : '') +
+      '</div>';
+    return h;
+  }
+
+  var _r3 = window.renderStage3;
+  if (typeof _r3 === 'function') {
+    window.renderStage3 = function (d) {
+      _r3(d);
+      try {
+        var host = g('s3Out');
+        if (host && d && d.recon2) host.insertAdjacentHTML('beforeend', recon2Html(d));
+      } catch (e) {}
+    };
+  }
+
+  /* ---------------------------------------------------------------
+   * 4) 4개 리스트 접기/펼치기 버튼
+   *    대상: ① 1단계 진단/실행(s1Out) ② 2단계 미리보기(s2Out)
+   *          ③ 예외 처리(exOut) ④ 최종 확정(s3Out)
+   *    각 표 위에 [▼ 접기] 버튼, 리스트 상단에 [전체 접기] 버튼
+   * ------------------------------------------------------------- */
+  var HOSTS = [
+    { id: 's1Out', name: '① 1단계 리스트' },
+    { id: 's2Out', name: '② 2단계 리스트' },
+    { id: 'exOut', name: '③ 예외 처리 리스트' },
+    { id: 's3Out', name: '④ 최종 확정 리스트' }
+  ];
+
+  function barFor(wrap) {
+    if (wrap.getAttribute('data-v9bar') === '1') return;
+    wrap.setAttribute('data-v9bar', '1');
+    var tbl = wrap.querySelector('table');
+    if (!tbl) return;
+    var bar = document.createElement('div');
+    bar.className = 'v9-listbar';
+    bar.style.cssText = 'display:flex;justify-content:flex-end;margin:0 0 2px';
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn-ghost btn-sm';
+    b.textContent = '▼ 표 접기';
+    b.onclick = function (ev) {
+      ev.stopPropagation();
+      var hid = tbl.style.display === 'none';
+      tbl.style.display = hid ? '' : 'none';
+      b.textContent = hid ? '▼ 표 접기' : '▶ 표 펼치기';
+    };
+    bar.appendChild(b);
+    wrap.parentNode.insertBefore(bar, wrap);
+  }
+
+  function decorateHost(id) {
+    var host = g(id);
+    if (!host) return;
+    Array.prototype.forEach.call(host.querySelectorAll('.tblwrap'), barFor);
+    if (host.getAttribute('data-v9top') !== '1' && host.querySelector('.tblwrap')) {
+      host.setAttribute('data-v9top', '1');
+      var info = HOSTS.filter(function (x) { return x.id === id; })[0];
+      var top = document.createElement('div');
+      top.style.cssText = 'display:flex;justify-content:flex-end;gap:6px;margin:0 0 6px';
+      var tb = document.createElement('button');
+      tb.type = 'button';
+      tb.className = 'btn btn-ghost btn-sm';
+      tb.textContent = '▼ 리스트 전체 접기';
+      tb.onclick = function () {
+        var wraps = host.querySelectorAll('.tblwrap');
+        var anyOpen = Array.prototype.some.call(wraps, function (w) {
+          var t = w.querySelector('table');
+          return t && t.style.display !== 'none';
+        });
+        Array.prototype.forEach.call(wraps, function (w) {
+          var t = w.querySelector('table');
+          if (t) t.style.display = anyOpen ? 'none' : '';
+          var bb = w.previousSibling;
+          if (bb && bb.querySelector && bb.querySelector('button')) {
+            bb.querySelector('button').textContent = anyOpen ? '▶ 표 펼치기' : '▼ 표 접기';
+          }
+        });
+        tb.textContent = anyOpen ? '▶ 리스트 전체 펼치기' : '▼ 리스트 전체 접기';
+      };
+      top.appendChild(tb);
+      host.insertBefore(top, host.firstChild);
+    }
+  }
+
+  function decorateAll() { HOSTS.forEach(function (h) { decorateHost(h.id); }); }
+
+  var obs = new MutationObserver(function () {
+    if (obs._t) return;
+    obs._t = setTimeout(function () { obs._t = null; decorateAll(); }, 220);
+  });
+  HOSTS.forEach(function (h) {
+    var el = g(h.id);
+    if (el) obs.observe(el, { childList: true, subtree: true });
+  });
+  document.addEventListener('click', function () { setTimeout(decorateAll, 260); });
+  setTimeout(decorateAll, 900);
+
+  /* ---------------------------------------------------------------
+   * 5) 보류 패널 통합 · 이월 정산 패널 숨김
+   * ------------------------------------------------------------- */
+  function tidyHold() {
+    var legacy = g('holdPanel');
+    if (legacy) legacy.style.display = 'none';           /* 보류 대기(구) → 통합 관리로 일원화 */
+    var carry = g('carryBox');
+    if (carry) carry.style.display = 'none';             /* 이월 발행 정산 → 화면에서만 숨김 */
+
+    var box = g('holdPanel81');
+    if (!box) return;
+    var h3 = box.querySelector('h3');
+    if (h3 && h3.textContent.indexOf('보류 통합 관리') < 0) {
+      h3.innerHTML = '⏸→✅ 보류 통합 관리 <span class="badge b-ok">등록 → 확정을 한 화면에서 · 원월(귀속월) 유지</span>';
+      var sub = box.querySelector('p.sub');
+      if (sub) {
+        sub.innerHTML =
+          '<b>이 화면 하나만 쓰면 됩니다.</b> [E 예외 처리] 유형 <b>발행 보류</b>로 등록한 건이 아래 목록에 쌓이고,<br>' +
+          '① 목록에서 고르고 → ② <b>[최초 스냅샷 불러오기]</b> → ③ 실제 수량·금액 확인/수정 → ④ <b>[보류 → 귀속월 발행 처리]</b> 끝.<br>' +
+          '· 납품건 일부만 보류한 건은 <b>부분 보류</b>로 표시되고 그 납품건만 계산됩니다.<br>' +
+          '· 처리하면 최초값 → 실제값 → 처리시각 → 메모가 <b>예외조정</b> 시트에 이력으로 남고, 원월 발행률에 바로 반영됩니다.<br>' +
+          '· 구 [보류 대기] 칸과 [이월 발행 정산] 칸은 이 화면으로 합쳐서 숨겼습니다(서버 기능은 그대로 살아 있습니다).';
+      }
+    }
+  }
+  setTimeout(tidyHold, 1300);
+  setTimeout(tidyHold, 2600);
+
+  /* ---------------------------------------------------------------
+   * 6) 거래처 목록이 갱신되면 선택 패널도 갱신
+   * ------------------------------------------------------------- */
+  var _le = window.loadExceptions;
+  if (typeof _le === 'function') {
+    window.loadExceptions = async function (silent) {
+      var r = await _le.apply(this, arguments);
+      addOptions();
+      renderPicker();
+      return r;
+    };
+  }
+
+  addOptions();
+  renderPicker();
+})();
+
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
