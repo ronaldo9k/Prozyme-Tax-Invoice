@@ -581,7 +581,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyaTinFP-9-PNR4pFFHe6KIk1fsrLgtWKuPLS8lDwI8FTTq689EEOAdZyrUOnLKKOql/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxJdSHPV7CK1CMWql2lGL03C2QGQNbJdSaw3ZtCnkPwvYUbvlVED-eHsSHiOHh7loTI/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3112,6 +3112,7 @@ loadExceptions(true);
 </script>
 
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html><script>
 /* =====================================================================
@@ -3670,5 +3671,632 @@ loadExceptions(true);
   setTimeout(function () { loadClients10(true); }, 1200);
 })();
 </script>
+<script>
+/* =====================================================================
+ * [v10.3] UI ADD-ON — 「전자세금계산서 핵심 개선 요청사항 3가지」 전용 패치
+ *   기존 화면/스크립트/함수는 한 글자도 삭제하지 않고 그대로 두고,
+ *   아래에서 필요한 부분만 '덧입힘' 합니다.
+ *
+ *   [요청 1] ① 계산서 수정발행 유형 순서를 무조건 ①→②→③→④ 로 정렬
+ *   [요청 2] 발행비율 입력 시 '출고박스 계산' + '출고금액 계산' 두 줄을 동시에 표시
+ *   [요청 3-1] ② 행 수정의 유형을 첫번째 방법과 '완전히 동일'하게 (4종 + 납품건 체크)
+ *   [요청 3-2] 등록 예외 리스트: 명칭 표기 + [취소] 즉시 반영 + [🔄 새로고침] 버튼
+ * ===================================================================== */
+(function () {
+  'use strict';
+
+  function g(id) { return document.getElementById(id); }
+  function q(sel, root) { return (root || document).querySelector(sel); }
+  function qa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function n0(v) { return (v === null || v === undefined || v === '') ? 0 : Number(v); }
+  function fnum(v) { if (v === null || v === undefined || v === '') return '-'; return (Math.round(Number(v) * 100) / 100).toLocaleString('ko-KR'); }
+  function fwon(v) { if (v === null || v === undefined || v === '') return '-'; return (Math.round(Number(v) || 0)).toLocaleString('ko-KR') + '원'; }
+  function curMonth() { var m = g('month'); return m ? m.value : ''; }
+  function logS(m, k) { try { log(m, k); } catch (e) {} }
+  function toastS(m, k) { try { toast(m, k); } catch (e) {} }
+  function busyS(b, on, label) { try { busy(b, on, label); } catch (e) {} }
+  function confirmS(t, b, y) { try { return confirmBox(t, b, y); } catch (e) { return Promise.resolve(false); } }
+
+  /* 분수/퍼센트 파서 — 서버(parseFractionV10_)와 완전히 같은 규칙 */
+  function frac(v) {
+    if (v === null || v === undefined || v === '') return null;
+    var s = String(v).trim();
+    var m = s.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+    if (m) { var den = Number(m[2]); if (!den) return null; return Number(m[1]) / den; }
+    var n = Number(s.replace(/[,\s%]/g, ''));
+    if (isNaN(n)) return null;
+    return n > 1 ? n / 100 : n;
+  }
+
+  /* =====================================================================
+   * [요청 3 브리지] 화면이 부르는 기존 action 을 v10.3 action 으로 연결
+   *   client_list       → client_list_v103        (취소된 예외를 서버에서 제외)
+   *   exceptions_delete → exceptions_delete_v103  (취소 + 최신 목록 동시 반환)
+   *   exceptions_save   → exceptions_save_v103    (저장 + 고정거래처 + 최신 목록)
+   *   · window.api 자체는 새로 만들지 않고 '이름만 바꿔' 넘깁니다(원본 그대로 동작).
+   *   · v10.2 가 client_list 응답을 __v102Clients 에 담아 쓰므로, 매핑 후에도 계속 채워줍니다.
+   * ===================================================================== */
+  var API_MAP_103 = {
+    client_list: 'client_list_v103',
+    exceptions_delete: 'exceptions_delete_v103',
+    exceptions_save: 'exceptions_save_v103'
+  };
+  if (window.api && !window.__v103ApiMapped) {
+    var _api103 = window.api;
+    window.api = async function (action, extra) {
+      var mapped = API_MAP_103[action] || action;
+      var d = await _api103(mapped, extra);
+      if (mapped === 'client_list_v103') {           /* v10.2 미리보기·건수 계산용 캐시 유지 */
+        try { window.__v102Clients = d; } catch (e) {}
+        try { window.__v103Clients = d; } catch (e) {}
+      }
+      if (mapped === 'exceptions_delete_v103' || mapped === 'exceptions_save_v103') {
+        try {
+          if (d && d.exceptions) window.__v102Clients = Object.assign({}, window.__v102Clients || {}, { exceptions: d.exceptions });
+        } catch (e) {}
+      }
+      return d;
+    };
+    window.__v103ApiMapped = true;
+  }
+
+  /* ---------------- 공통 CSS ---------------- */
+  var css = document.createElement('style');
+  css.textContent =
+    '.rw103{margin:8px 0 0;padding:10px 11px;border-radius:11px;border:1px solid #F2CF8B;background:#FFFDF7;width:100%}' +
+    '.rw103 .rw103-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 7px}' +
+    '.rw103 .rw103-hd b{font-size:12.6px;color:#8A4B08}' +
+    '.rw103 .rw103-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}' +
+    '.rw103 .rw103-row input,.rw103 .rw103-row select{font-family:inherit;font-size:12px;padding:6px 8px;border-radius:8px;border:1px solid var(--line-2);background:#fff}' +
+    '.rw103 .rw103-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}' +
+    '.rw103 .rw103-chip{background:#fff;border:1px solid #F2CF8B;border-radius:8px;padding:4px 8px;font-size:11.4px;color:#8A4B08;font-weight:800}' +
+    '.rw103 .rw103-pv{margin-top:7px;font-size:11.8px;font-weight:700;line-height:1.75;color:#8A4B08;background:#fff;border:1px dashed #F2CF8B;border-radius:8px;padding:7px 9px}' +
+    '.rw103 .rw103-pv .amt{color:#1D4ED8}' +
+    '.rw103-legacy-hide{display:none!important}';
+  document.head.appendChild(css);
+
+  /* =====================================================================
+   * [요청 1] 유형 순서 ①→②→③→④ 강제 정렬
+   *   · 값 순서: HOLD(①) → EXCLUDE_CLIENT(②) → SET_EXACT(③) → ISSUED_ALREADY(④)
+   *   · 첫번째 방법 패널(#v10Type)과 ② 행 수정(#rw103Type) 모두 같은 순서
+   * ===================================================================== */
+  var TYPE_ORDER = ['HOLD', 'EXCLUDE_CLIENT', 'SET_EXACT', 'ISSUED_ALREADY'];
+  var TYPE_LABEL = {
+    HOLD: '① 발행보류 (귀속월 발행처리 — 이번 달 발행에서 빼두고 원월 그대로 추후 발행)',
+    EXCLUDE_CLIENT: '② 거래처 전체 제외 (이번 달 이 거래처 전체 발행 안 함 · 고정 거래처 저장 가능)',
+    SET_EXACT: '③ 거래처 수정발행 (발행수량 / 발행금액 / 발행비율 — 선택 입력)',
+    ISSUED_ALREADY: '④ 기발행완료 (납품 건별 제외 — 이미 발행한 납품건만 골라서 빼기)'
+  };
+  function orderSelect(sel) {
+    if (!sel || !sel.options || !sel.options.length) return false;
+    var opts = Array.prototype.slice.call(sel.options);
+    var byVal = {};
+    opts.forEach(function (o) { byVal[o.value] = o; });
+    var hasAll = TYPE_ORDER.every(function (v) { return !!byVal[v]; });
+    if (!hasAll) return false;
+    /* 라벨 통일 */
+    TYPE_ORDER.forEach(function (v) { byVal[v].textContent = TYPE_LABEL[v]; });
+    /* 순서 재배치 — 전부 떼었다가 ①→②→③→④ 순서로 다시 붙임 */
+    opts.forEach(function (o) { if (o.parentNode === sel) sel.removeChild(o); });
+    TYPE_ORDER.forEach(function (v) { sel.appendChild(byVal[v]); });
+    opts.filter(function (o) { return TYPE_ORDER.indexOf(o.value) < 0; }).forEach(function (o) { sel.appendChild(o); });
+    return true;
+  }
+  function applyTypeOrder() {
+    orderSelect(g('v10Type'));
+    orderSelect(g('rw103Type'));
+  }
+  applyTypeOrder();
+  [80, 400, 1200, 2600, 4200].forEach(function (ms) { setTimeout(applyTypeOrder, ms); });
+  try {
+    var moType = new MutationObserver(function () { applyTypeOrder(); });
+    if (g('v10ExactPanel')) moType.observe(g('v10ExactPanel'), { childList: true, subtree: false });
+  } catch (e) {}
+
+  /* [요청 2-전제] 비율 적용 대상 기본값을 '둘 다'로 — 비율만 넣어도 박스·금액이 함께 계산되어 저장됩니다. */
+  function initRatioTarget103() {
+    var s2 = g('v10RatioTarget');
+    if (s2 && !s2.getAttribute('data-v103d')) { s2.value = 'both'; s2.setAttribute('data-v103d', '1'); }
+  }
+  initRatioTarget103();
+  [300, 1200, 2600].forEach(function (ms) { setTimeout(initRatioTarget103, ms); });
+
+  /* =====================================================================
+   * [요청 2] 발행비율 계산 메시지 — 박스 + 금액 두 줄 동시 표시
+   *   예)  출고박스 30 × 2/3 = 20 → 20 (버림)
+   *        출고금액 1,200,000원 × 2/3 = 800,000원 → 800,000원 (버림)
+   * ===================================================================== */
+  function clientBase(name) {
+    var rows = (window.__v102Clients && window.__v102Clients.clients) || [];
+    for (var i = 0; i < rows.length; i++) if (rows[i].client === name) return rows[i];
+    return null;
+  }
+  /* 박스/금액 두 줄을 모두 계산해 HTML 로 돌려줍니다. */
+  function ratioLinesHtml(base, rTxt) {
+    var r = frac(rTxt);
+    if (r === null) return '⚠ 비율 형식을 확인하세요 — 예: 2/3, 1/4, 0.6667, 66%';
+    if (!base) return '거래처(또는 행)를 먼저 선택하면 비율 계산이 표시됩니다.';
+    var bq = n0(base.qty), ba = n0(base.amount);
+    var rawQ = bq * r, q = Math.floor(rawQ);
+    var rawA = ba * r, a = Math.floor(rawA);
+    var unit = bq > 0 ? Math.floor(ba / bq) : 0;
+    var h = '';
+    h += '출고박스 ' + fnum(bq) + ' × ' + esc(rTxt) + ' = ' + fnum(rawQ) + ' → <b>' + fnum(q) + '</b> (버림)';
+    h += '<br><span class="amt">출고금액 ' + fwon(ba) + ' × ' + esc(rTxt) + ' = ' + fwon(rawA) + ' → <b>' + fwon(a) + '</b> (버림)</span>';
+    h += '<br><span style="color:#33507A">→ 이 두 값(발행수량 <b>' + fnum(q) + '박스</b> / 발행금액 <b>' + fwon(a) + '</b>)을 확인한 뒤 [예외 등록]하세요.'
+      + (unit > 0 ? ' (참고 단가 ' + fwon(unit) + ')' : '') + '</span>';
+    return h;
+  }
+
+  /* 첫번째 방법(① 계산서 수정발행) 미리보기 덧입힘 — v10.2 미리보기 뒤에서 한 번 더 그립니다. */
+  function decoratePreview103() {
+    var host = g('v10Preview2');
+    var ty = g('v10Type');
+    var rEl = g('v10Ratio');
+    if (!host || !ty || !rEl) return;
+    var t = ty.value, rTxt = String(rEl.value || '').trim();
+    if (t !== 'SET_EXACT' || !rTxt) return;              /* 값이 없으면 v10.2 표시 그대로 둡니다 */
+    var cl = (g('v10Client') && g('v10Client').value || '').trim();
+    host.style.display = 'block';
+    host.innerHTML = ratioLinesHtml(clientBase(cl), rTxt);
+  }
+  ['v10Ratio', 'v10Qty', 'v10Amt', 'v10Client', 'v10Type'].forEach(function (id) {
+    var el = g(id);
+    if (el) { el.addEventListener('input', function () { setTimeout(decoratePreview103, 0); }); el.addEventListener('change', function () { setTimeout(decoratePreview103, 0); }); }
+  });
+  try {
+    var moPrev = new MutationObserver(function () { decoratePreview103(); });
+    if (g('v10Preview2')) moPrev.observe(g('v10Preview2'), { childList: true, characterData: true, subtree: true });
+  } catch (e) {}
+
+  /* =====================================================================
+   * [요청 3-1] ② 행 수정 — 첫번째 방법과 '같은 유형 4종 + 같은 기능'
+   *   · 기존 요소는 지우지 않고 화면에서만 감춥니다(내부 로직이 참조하므로 안전).
+   *   · 새 UI: 유형(①~④) / 발행수량 / 발행금액 / 발행비율 / 사유 / 납품건 체크 / 예외 등록
+   * ===================================================================== */
+  var RW = { client: '', base: null, pages: {}, picked: {}, pagesLoaded: false };
+
+  function buildRowEdit103() {
+    var bar = g('rowEditBar');
+    if (!bar || g('rw103')) return;
+
+    /* (1) 기존 자식들 감추기 (삭제 아님) */
+    Array.prototype.forEach.call(bar.children, function (ch) {
+      if (ch.id === 'reClient') return;
+      if (ch.classList && ch.classList.contains('rowedit-note')) return;
+      ch.classList.add('rw103-legacy-hide');
+    });
+
+    /* (2) 새 UI 삽입 */
+    var box = document.createElement('div');
+    box.id = 'rw103';
+    box.className = 'rw103';
+    box.innerHTML =
+      '<div class="rw103-hd">' +
+        '<b>② 행 수정 — 유형 선택 → 실제 발행값 입력 → [예외 등록]</b>' +
+        '<span class="badge b-warn">① 계산서 수정발행과 유형·기능 완전 동일</span>' +
+        '<span style="flex:1"></span>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="rw103Close">닫기</button>' +
+      '</div>' +
+      '<div class="rw103-chips" id="rw103Chips"><span class="rw103-chip">거래처를 선택하면 기준치가 표시됩니다</span></div>' +
+      '<div class="rw103-row">' +
+        '<select id="rw103Type" style="min-width:330px">' +
+          '<option value="HOLD">' + TYPE_LABEL.HOLD + '</option>' +
+          '<option value="EXCLUDE_CLIENT">' + TYPE_LABEL.EXCLUDE_CLIENT + '</option>' +
+          '<option value="SET_EXACT">' + TYPE_LABEL.SET_EXACT + '</option>' +
+          '<option value="ISSUED_ALREADY">' + TYPE_LABEL.ISSUED_ALREADY + '</option>' +
+        '</select>' +
+        '<select id="rw103RatioTarget" style="min-width:210px;font-weight:700">' +
+          '<option value="both">비율 적용 대상: 둘 다 (수량·금액 각각 계산)</option>' +
+          '<option value="qty">비율 적용 대상: 발행수량 (금액은 단가로 자동)</option>' +
+          '<option value="amt">비율 적용 대상: 발행금액</option>' +
+        '</select>' +
+        '<input id="rw103Qty" type="number" placeholder="발행수량(박스)" style="width:126px">' +
+        '<input id="rw103Amt" type="number" placeholder="발행금액(총액)" style="width:146px">' +
+        '<input id="rw103Ratio" type="text" placeholder="발행비율 (예: 2/3)" style="width:150px">' +
+        '<input id="rw103Reason" type="text" placeholder="사유 (예: 업체 요청)" style="flex:1 1 150px;min-width:150px">' +
+        '<button class="btn btn-primary btn-sm" type="button" id="rw103Save">예외 등록</button>' +
+      '</div>' +
+      '<div class="rw103-row" id="rw103FixedRow" style="display:none;margin-top:7px">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:11.6px;font-weight:800;color:#8A4B08">' +
+          '<input type="checkbox" id="rw103FixedChk"> 고정 거래처로 저장 (다음 달에도 “거래처 전체 제외” 대기로 자동 표시 — [예외 등록]을 눌러야 반영)' +
+        '</label>' +
+      '</div>' +
+      '<div class="rw103-pv" id="rw103Preview">③ 유형에서 비율을 넣으면 <b>출고박스</b>와 <b>출고금액</b> 계산이 함께 표시됩니다.</div>' +
+      '<div id="rw103PagePick" style="display:none;margin-top:8px"></div>';
+    bar.appendChild(box);
+
+    /* (3) 이벤트 */
+    g('rw103Close').onclick = function () { closeRowEdit103(); };
+    g('rw103Save').onclick = function () { saveRowEdit103(this); };
+    ['rw103Qty', 'rw103Amt', 'rw103Ratio'].forEach(function (id) {
+      g(id).addEventListener('input', previewRowEdit103);
+      g(id).addEventListener('change', previewRowEdit103);
+    });
+    g('rw103RatioTarget').addEventListener('change', previewRowEdit103);
+    g('rw103Type').addEventListener('change', function () { typeUI103(); });
+    orderSelect(g('rw103Type'));
+    typeUI103();
+  }
+
+  function rowOfClient(name) {
+    var hit = null;
+    qa('tr.selrow').forEach(function (tr) { if (tr.getAttribute('data-client') === name) hit = tr; });
+    return hit;
+  }
+  function baseOfRow(name) {
+    var tr = rowOfClient(name);
+    if (tr) {
+      return {
+        qty: n0(tr.getAttribute('data-outqty')),
+        amount: n0(tr.getAttribute('data-outamt')),
+        issuedQty: n0(tr.getAttribute('data-issqty')),
+        issuedAmount: n0(tr.getAttribute('data-issamt')),
+        pages: null
+      };
+    }
+    var c = clientBase(name);
+    return c ? { qty: n0(c.qty), amount: n0(c.amount), issuedQty: n0(c.issuedQty), issuedAmount: n0(c.issuedAmount), pages: c.pages } : null;
+  }
+
+  function chips103() {
+    var host = g('rw103Chips');
+    if (!host) return;
+    var b = RW.base;
+    if (!b) { host.innerHTML = '<span class="rw103-chip">' + esc(RW.client || '') + ' — 이번 달 출고 데이터 없음</span>'; return; }
+    host.innerHTML =
+      '<span class="rw103-chip"><b>' + esc(RW.client) + '</b></span>' +
+      '<span class="rw103-chip">출고박스 <b>' + fnum(b.qty) + '</b></span>' +
+      '<span class="rw103-chip">출고금액 <b>' + fwon(b.amount) + '</b></span>' +
+      '<span class="rw103-chip">발행박스(예상) <b>' + fnum(b.issuedQty) + '</b></span>' +
+      '<span class="rw103-chip">발행금액(예상) <b>' + fwon(b.issuedAmount) + '</b></span>';
+  }
+
+  function previewRowEdit103() {
+    var host = g('rw103Preview');
+    if (!host) return;
+    var t = g('rw103Type').value;
+    var rTxt = String(g('rw103Ratio').value || '').trim();
+    if (t === 'SET_EXACT' && rTxt) { host.innerHTML = ratioLinesHtml(RW.base, rTxt); return; }
+    if (t === 'SET_EXACT') {
+      host.innerHTML = '③ 거래처 수정발행 — 발행수량·발행금액·발행비율 중 <b>하나 이상</b>을 넣으세요. 비율을 넣으면 박스·금액 계산이 함께 표시됩니다.';
+    } else if (t === 'HOLD') {
+      host.innerHTML = '① 발행보류 — 이번 달 최종 발행에서 빠지고 [보류 통합 관리] 대기로 이동합니다(귀속월은 이번 달 유지).';
+    } else if (t === 'EXCLUDE_CLIENT') {
+      host.innerHTML = '② 거래처 전체 제외 — 이 거래처 발행 행이 제거됩니다' + (RW.base ? ' (대상: 출고 ' + fnum(RW.base.qty) + '박스 / ' + fwon(RW.base.amount) + ')' : '');
+    } else if (t === 'ISSUED_ALREADY') {
+      host.innerHTML = '④ 기발행완료 — 아래 <b>납품건 목록</b>에서 이미 발행된 건을 체크하세요. 체크한 건만 일괄발행에서 빠지고 발행률에는 발행으로 반영됩니다.';
+    }
+  }
+
+  function typeUI103() {
+    var t = g('rw103Type').value;
+    var isEx = (t === 'SET_EXACT');
+    g('rw103Qty').disabled = !isEx;
+    g('rw103Amt').disabled = !isEx;
+    g('rw103Ratio').disabled = !isEx;
+    g('rw103RatioTarget').disabled = !isEx;
+    g('rw103FixedRow').style.display = (t === 'EXCLUDE_CLIENT') ? 'flex' : 'none';
+    var pick = g('rw103PagePick');
+    if (t === 'ISSUED_ALREADY') { pick.style.display = 'block'; loadPages103(); }
+    else { pick.style.display = 'none'; RW.picked = {}; }
+    previewRowEdit103();
+  }
+
+  function loadPages103() {
+    if (RW.pagesLoaded && RW.pages[RW.client]) { renderPagePick103(); return; }
+    try {
+      api('client_pages_v9', { month: curMonth() }).then(function (d) {
+        RW.pages = {};
+        (d.clients || []).forEach(function (c) { RW.pages[c.client] = c; });
+        RW.pagesLoaded = true;
+        renderPagePick103();
+      })['catch'](function () { renderPagePick103(); });
+    } catch (e) { renderPagePick103(); }
+  }
+
+  function renderPagePick103() {
+    var host = g('rw103PagePick');
+    if (!host) return;
+    var list = RW.pages[RW.client];
+    if (!RW.client) { host.innerHTML = '<div class="note warn">④ 유형 — 거래처를 먼저 선택하세요.</div>'; return; }
+    if (!list || !(list.pages || []).length) {
+      host.innerHTML = '<div class="note warn">' + esc(RW.client) + ' — 이번 달 세금계산서 DB 납품건이 없습니다. (1단계/2단계를 먼저 실행하세요)</div>';
+      return;
+    }
+    var rows = list.pages.map(function (p) {
+      var on = !!RW.picked[p.id];
+      return '<label style="display:flex;gap:8px;align-items:center;padding:5px 6px;border-bottom:1px solid var(--line);font-size:12px">' +
+        '<input type="checkbox" data-rw103pg="' + esc(p.id) + '"' + (on ? ' checked' : '') + '>' +
+        '<span style="min-width:86px">' + esc(p.date || '-') + '</span>' +
+        '<span style="flex:1;min-width:110px">' + esc(p.title || '-') + '</span>' +
+        '<span style="min-width:62px;text-align:right">' + fnum(p.qty) + '박스</span>' +
+        '<span style="min-width:94px;text-align:right">' + fwon(p.amount) + '</span>' +
+        (p.url ? '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">열기</a>' : '') +
+        '</label>';
+    }).join('');
+    var cnt = 0, sq = 0, sa = 0;
+    list.pages.forEach(function (p) { if (RW.picked[p.id]) { cnt++; sq += n0(p.qty); sa += n0(p.amount); } });
+    host.innerHTML =
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">' +
+        '<b style="font-size:12.4px">납품건 목록 (건별 제외 선택)</b>' +
+        '<span class="badge b-neutral">' + esc(RW.client) + ' · ' + list.pages.length + '건</span>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="rw103PickClear">선택 해제</button>' +
+      '</div>' +
+      '<div style="max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff">' + rows + '</div>' +
+      '<p class="hint" style="margin:6px 0 0">선택 합계 · <b>' + cnt + '건</b> / ' + fnum(sq) + '박스 / ' + fwon(sa) + ' — 체크한 건만 [예외 등록] 시 기록됩니다.</p>';
+    qa('[data-rw103pg]', host).forEach(function (cb) {
+      cb.onchange = function () {
+        var id = cb.getAttribute('data-rw103pg');
+        if (cb.checked) RW.picked[id] = true; else delete RW.picked[id];
+        renderPagePick103();
+      };
+    });
+    var clr = g('rw103PickClear');
+    if (clr) clr.onclick = function () { RW.picked = {}; renderPagePick103(); };
+  }
+
+  function prepareRowEdit103(name) {
+    buildRowEdit103();
+    RW.client = name || '';
+    RW.base = baseOfRow(RW.client);
+    RW.picked = {};
+    if (!g('rw103')) return;
+    if (g('rw103Qty')) g('rw103Qty').value = '';
+    if (g('rw103Amt')) g('rw103Amt').value = '';
+    if (g('rw103Ratio')) g('rw103Ratio').value = '';
+    if (g('rw103Reason')) g('rw103Reason').value = '';
+    if (g('rw103FixedChk')) g('rw103FixedChk').checked = false;
+    if (g('rw103Type')) g('rw103Type').value = 'SET_EXACT';
+    orderSelect(g('rw103Type'));
+    chips103();
+    typeUI103();
+  }
+
+  function closeRowEdit103() {
+    var bar = g('rowEditBar');
+    if (bar) bar.style.display = 'none';
+    qa('tr.editing').forEach(function (tr) { tr.classList.remove('editing'); });
+  }
+
+  function saveRowEdit103(btn) {
+    var t = g('rw103Type').value;
+    var cl = RW.client;
+    if (!cl) { toastS('거래처를 먼저 선택하세요.', 'err'); return; }
+    var payload = { month: curMonth(), type: t, clientName: cl, reason: g('rw103Reason').value.trim() || '② 행 수정에서 등록' };
+
+    if (t === 'SET_EXACT') {
+      var qv = g('rw103Qty').value, av = g('rw103Amt').value;
+      var rTxt = String(g('rw103Ratio').value || '').trim();
+      var hasQ = qv !== '', hasA = av !== '';
+      if (!hasQ && !hasA && !rTxt) { toastS('발행수량·발행금액·발행비율 중 하나는 입력하세요.', 'err'); return; }
+      if (rTxt && frac(rTxt) === null) { toastS('비율 형식이 올바르지 않습니다. (예: 2/3 또는 0.6667)', 'err'); return; }
+      var q = hasQ ? Number(qv) : null, a = hasA ? Number(av) : null;
+      if (rTxt) {
+        var r = frac(rTxt), b = RW.base || { qty: 0, amount: 0 };
+        var bq = n0(b.qty), ba = n0(b.amount), tgt = g('rw103RatioTarget').value;
+        if (tgt === 'qty' || tgt === 'both') {
+          if (!hasQ) q = Math.floor(bq * r);
+          if (tgt === 'both' && !hasA) a = Math.floor(ba * r);
+          else if (tgt === 'qty' && !hasA && q !== null) a = Math.floor(q * (bq > 0 ? Math.floor(ba / bq) : 0));
+        } else if (tgt === 'amt') {
+          if (!hasA) a = Math.floor(ba * r);
+        }
+      }
+      payload.qty = q; payload.amount = a; payload.ratio = rTxt || null;
+
+    } else if (t === 'ISSUED_ALREADY') {
+      var ids = Object.keys(RW.picked);
+      if (!ids.length) { toastS('납품건 목록에서 이미 발행된 건을 체크하세요.', 'err'); return; }
+      payload.pageId = ids.join(',');
+
+    } else if (t === 'EXCLUDE_CLIENT') {
+      if (g('rw103FixedChk') && g('rw103FixedChk').checked) payload.type = 'FIXED_EXCLUDE';
+    }
+
+    busyS(btn, true);
+    api('exceptions_save', payload).then(function (d) {
+      logS('② 행 수정 → 예외 등록: ' + (payload.type) + ' / ' + cl, 'ok');
+      toastS((d && d.summary) || '예외 등록 완료 — 3단계에 자동 반영됩니다.', 'ok');
+      busyS(btn, false, '예외 등록');
+      closeRowEdit103();
+      if (window.loadExceptions) window.loadExceptions(true);
+      setTimeout(decorateList103, 400);
+    })['catch'](function (e) {
+      busyS(btn, false, '예외 등록');
+      logS(e.message, 'err'); toastS(e.message, 'err');
+    });
+  }
+
+  /* openRowEdit(리스트 [✎ 수정]) 을 가로채서 새 UI 로 연결 — 원본 동작은 그대로 수행 */
+  var _openRowEdit103 = window.openRowEdit;
+  if (typeof _openRowEdit103 === 'function') {
+    window.openRowEdit = function (clientName) {
+      var r = _openRowEdit103.apply(this, arguments);
+      setTimeout(function () { prepareRowEdit103(clientName); }, 0);
+      return r;
+    };
+  }
+  /* 리스트가 다시 그려질 때 현재 선택 거래처 기준치도 갱신 */
+  function refreshRowEditBase103() {
+    if (!g('rw103') || g('rowEditBar').style.display === 'none') return;
+    if (!RW.client) return;
+    RW.base = baseOfRow(RW.client);
+    chips103();
+  }
+
+  /* =====================================================================
+   * [요청 3-2] 등록 예외 리스트 — 명칭 + [취소] 즉시 반영 + [🔄 새로고침]
+   * ===================================================================== */
+  function listBarRefresh103() {
+    var host = g('exOut');
+    if (!host) return;
+    /* (1) 명칭 바 — v10.2 가 만든 바가 있으면 문구만 보강, 없으면 새로 생성 */
+    var bar = g('v102ExBar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'v102ExBar';
+      bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin:0 0 8px;flex-wrap:wrap';
+      bar.innerHTML =
+        '<b style="font-size:13px">📋 등록 예외 리스트</b>' +
+        '<span class="badge b-warn">고정거래처 즐겨찾기 · 보류 · 제외 · 수정발행 · 기발행</span>' +
+        '<button class="btn btn-ghost btn-sm" id="v102ExRefresh" type="button">🔄 새로고침</button>';
+      host.insertBefore(bar, host.firstChild);
+    }
+    var hb = bar.querySelector('b');
+    if (hb) hb.textContent = '📋 등록 예외 리스트 (고정거래처 즐겨찾기)';
+    var badge = bar.querySelector('.badge');
+    if (badge) badge.textContent = '취소하면 즉시 사라짐 · [⤴ 당월 적용] 후 [예외 등록]을 눌러야 이번 달 반영';
+    var rf = g('v102ExRefresh');
+    if (rf && !rf.getAttribute('data-v103')) {
+      rf.setAttribute('data-v103', '1');
+      rf.onclick = function () { refreshE103(rf); };
+    }
+
+    /* (2) 각 표의 [표 접기] 왼쪽에 [🔄 새로고침] 삽입 */
+    qa('.v9-listbar', host).forEach(function (lb) {
+      if (lb.querySelector('[data-v103rf]')) return;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn btn-ghost btn-sm';
+      b.setAttribute('data-v103rf', '1');
+      b.textContent = '🔄 새로고침';
+      b.title = '예외 목록 + 거래처 수치를 서버에서 다시 읽어 즉시 반영합니다';
+      b.style.marginRight = '6px';
+      b.onclick = function (ev) { ev.stopPropagation(); refreshE103(b); };
+      lb.insertBefore(b, lb.firstChild);
+      lb.style.justifyContent = 'flex-end';
+    });
+    /* (3) 표 접기 바가 아직 없는 표는 직접 만들어 줌 */
+    qa('.tblwrap', host).forEach(function (wrap) {
+      if (wrap.getAttribute('data-v103bar') === '1') return;
+      if (wrap.previousSibling && wrap.previousSibling.classList && wrap.previousSibling.classList.contains('v9-listbar')) return;
+      wrap.setAttribute('data-v103bar', '1');
+    });
+  }
+
+  /* 서버에서 예외 목록 + 거래처 목록을 다시 읽어 화면 전체를 갱신 */
+  async function refreshE103(btn) {
+    busyS(btn, true);
+    try {
+      if (window.loadExceptions) await window.loadExceptions(true);
+      var hit = null;
+      qa('.step').forEach(function (sec) {
+        var noEl = sec.querySelector('.step-no');
+        if (noEl && noEl.textContent.trim() === 'E') hit = sec;
+      });
+      var b = hit ? hit.querySelector('.v10-refresh') : null;
+      /* v10-refresh 는 loadExceptions+loadClients 를 함께 호출 — 있으면 한 번 더 */
+      if (b && !btn) b.click();
+      logS('등록 예외 리스트 새로고침 — 취소 반영 · 건수 · 거래처 수치 모두 갱신', 'ok');
+      toastS('새로고침 완료 — 취소한 예외는 목록·건수에서 빠집니다.', 'ok');
+    } catch (e) { logS(e.message, 'err'); }
+    busyS(btn, false, '🔄 새로고침');
+    setTimeout(decorateList103, 200);
+  }
+
+  /* 취소된 예외 행은 화면에서 즉시 제거 + 남은 건수 재계산 (2중 안전장치) */
+  function hideCancelled103() {
+    var host = g('exOut');
+    if (!host) return 0;
+    var rows = (window.__v102Clients && window.__v102Clients.exceptions) || [];
+    var cancelled = {};
+    rows.forEach(function (e) { if (String(e.status || '활성').trim() === '취소') cancelled[String(e.id)] = true; });
+    var removed = 0;
+    qa('button[data-exdel]', host).forEach(function (b) {
+      var id = b.getAttribute('data-exdel');
+      if (!cancelled[id]) return;
+      var tr = b.closest('tr');
+      if (tr && tr.parentNode) { tr.parentNode.removeChild(tr); removed++; }
+    });
+    return removed;
+  }
+
+  /* [취소] 버튼 — 삭제 응답에 담긴 최신 목록으로 그 자리에서 즉시 제거 */
+  window.delException = async function (id) {
+    var ok = await confirmS('예외 취소', '이 예외를 삭제할까요?\n삭제하면 목록·[등록 예외] 건수에서 즉시 빠지고, 3단계는 원래 값으로 다시 계산됩니다.', '삭제');
+    if (!ok) return;
+    try {
+      await api('exceptions_delete', { exceptId: id, month: curMonth() });
+      /* ① 화면에서 즉시 행 제거 (서버 응답을 기다리지 않고 바로) */
+      var btn = q('button[data-exdel="' + id + '"]');
+      if (btn) { var tr = btn.closest('tr'); if (tr && tr.parentNode) tr.parentNode.removeChild(tr); }
+      logS('예외 취소 ' + id + ' — 리스트/건수 즉시 반영', 'ok');
+      /* ② 서버 목록 다시 읽어 KPI·표 전체 재계산 */
+      if (window.loadExceptions) await window.loadExceptions(true);
+      hideCancelled103();
+      setTimeout(decorateList103, 250);
+      toastS('예외 취소 완료 — 목록과 [등록 예외] 건수에 바로 반영했습니다.', 'ok');
+    } catch (e) {
+      logS(e.message, 'err'); toastS(e.message, 'err');
+    }
+  };
+
+  function decorateList103() {
+    try { hideCancelled103(); } catch (e) {}
+    try { listBarRefresh103(); } catch (e) {}
+    try { refreshRowEditBase103(); } catch (e) {}
+  }
+
+  /* loadExceptions 가 끝날 때마다 자동으로 덧입힘 (v10.2 래핑 뒤에 한 겹 더) */
+  if (window.loadExceptions && !window.__v103ExWrapped) {
+    var _loadExc103 = window.loadExceptions;
+    window.loadExceptions = async function (silent) {
+      var r = await _loadExc103(silent);
+      try { decorateList103(); } catch (e) {}
+      return r;
+    };
+    window.__v103ExWrapped = true;
+  }
+
+  try {
+    var moList = new MutationObserver(function () { decorateList103(); });
+    if (g('exOut')) moList.observe(g('exOut'), { childList: true });
+  } catch (e) {}
+
+  /* =====================================================================
+   * [요청] 웹앱 안의 사용 매뉴얼도 v10.3 내용으로 교체 (서버 manual_v103 응답 사용)
+   *   · 기존 매뉴얼 본문은 지우지 않고, 맨 아래에 v10.3 섹션을 덧붙입니다.
+   * ===================================================================== */
+  function renderManual103() {
+    if (!g('manualBody')) return;
+    if (g('manualV103')) return;
+    api('manual_v103', {}).then(function (d) {
+      var body = g('manualBody');
+      if (!body || !d || !d.v103 || g('manualV103')) return;
+      var h = '<div id="manualV103">' +
+        '<h3 style="font-size:13.6px;margin:18px 0 8px">🆕 [v10.3] 이번 업데이트 3가지 — 초등생도 이해하는 설명</h3>';
+      d.v103.forEach(function (sec) {
+        h += '<div class="note info" style="margin:0 0 8px"><b>' + esc(sec.title) + '</b><ul>' +
+          (sec.items || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+      });
+      if (d.typeGuideKid && d.typeGuideKid.length) {
+        h += '<h3 style="font-size:13.6px;margin:16px 0 8px">🎈 유형 4가지 — 아들도 따라하는 사용법</h3>';
+        h += '<div class="tblwrap"><table><thead><tr><th>유형</th><th>언제 쓰나</th><th>초등생 설명</th><th>누르는 순서</th></tr></thead><tbody>' +
+          d.typeGuideKid.map(function (t) {
+            return '<tr><td><b>' + esc(t.name) + '</b></td><td class="mid">' + esc(t.kid) + '</td>' +
+              '<td class="mid">' + esc(t.kid) + '</td><td class="mid">' + esc(t.how) + '</td></tr>';
+          }).join('') + '</tbody></table></div>';
+      }
+      h += '</div>';
+      body.insertAdjacentHTML('beforeend', h);
+    })['catch'](function () {});
+  }
+  setTimeout(renderManual103, 3200);
+  var moM103 = new MutationObserver(function () { if (g('manualBody') && !g('manualV103')) renderManual103(); });
+  try { if (g('manualBody')) moM103.observe(g('manualBody'), { childList: true }); } catch (e) {}
+
+  /* 초기 실행 */
+  buildRowEdit103();
+  setTimeout(function () { applyTypeOrder(); decorateList103(); }, 900);
+  setTimeout(function () { applyTypeOrder(); decorateList103(); }, 2600);
+})();
+</script>
+
 </body>
 </html>
