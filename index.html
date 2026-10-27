@@ -185,7 +185,7 @@ pre.log .wn{color:#FCD34D}
 .side .row{display:flex; justify-content:space-between; font-size:12px; padding:3px 0; border-bottom:1px dashed #E6EDF5}
 .side .row:last-child{border-bottom:0}
 .side .row b{font-weight:800}
-/* [v4.0] 세션 접기/펼치기 */
+/* [v9.9] 세션 접기/펼치기 */
 .step.collapsed .step-bd{display:none}
 .step-hd{cursor:pointer;user-select:none;-webkit-user-select:none}
 .chev{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:1px solid var(--line-2);background:#fff;
@@ -259,7 +259,7 @@ tr.editing td{background:#FFF9E6!important}
     <div class="brand">
       <div class="brand-mark">PZ</div>
       <div class="brand-txt">
-        <h1>세금계산서 컨트롤 타워 <span style="font-size:11px;color:#8FE3B4">v4.0</span></h1>
+        <h1>세금계산서 컨트롤 타워 <span style="font-size:11px;color:#8FE3B4">v9.9</span></h1>
         <p>노션 출고 → 세금계산서 DB → 홈택스 엑셀양식 → 발행률·차액</p>
       </div>
     </div>
@@ -289,7 +289,7 @@ tr.editing td{background:#FFF9E6!important}
     <button class="navbtn" type="button" data-goto="R"><i>R</i> 발행률 리포트</button>
   </div>
 
-  <!-- [v4.0] 사용 매뉴얼 (v6.0: 상단 버튼으로 여는 전용 화면) -->
+  <!-- [v9.9] 사용 매뉴얼 (v6.0: 상단 버튼으로 여는 전용 화면) -->
   <section class="step manual-page" id="manualSec">
     <div class="step-hd">
       <div class="step-no">?</div>
@@ -307,7 +307,7 @@ tr.editing td{background:#FFF9E6!important}
       </div>
       <div id="manualBody"></div>
       <div class="note" style="margin-top:8px">
-        <b>중요</b> · 시간 제한으로 끊기는 문제는 v4.0에서 <b>브라우저가 자동으로 이어서 호출</b>하는 방식으로 바뀌었습니다.
+        <b>중요</b> · 시간 제한으로 끊기는 문제는 v9.9에서 <b>브라우저가 자동으로 이어서 호출</b>하는 방식으로 바뀌었습니다.
         1단계를 누른 뒤 창을 닫지 마세요(닫아도 서버 트리거가 이어받습니다). 남은 건이 0이 될 때까지 자동 반복됩니다.
       </div>
     </div>
@@ -561,7 +561,7 @@ tr.editing td{background:#FFF9E6!important}
   </div>
 
   <p class="foot">
-    푸로찜 에스 · 세금계산서 컨트롤 타워 v4.0<br>
+    푸로찜 에스 · 세금계산서 컨트롤 타워 v9.9<br>
     1단계는 서버가 자동으로 이어서 처리합니다(6분 제한 근본 해결). 처음엔 “진단”으로 숫자를 확인한 뒤 실행하세요.
   </p>
 </main>
@@ -726,7 +726,7 @@ function table(cols, rows, emptyText) {
     '</tr></thead><tbody>' +
     rows.map(function (r, idx) {
       return '<tr' + (r._rowAttr || '') + '>' + cols.map(function (c) {
-        if (c.no) return '<td class="no-col num">' + (idx + 1) + '</td>';   /* [v4.0] 표시 전용 No. — 연동값 아님 */
+        if (c.no) return '<td class="no-col num">' + (idx + 1) + '</td>';   /* [v9.9] 표시 전용 No. — 연동값 아님 */
         return '<td class="' + (c.num ? 'num' : '') + (c.mid ? ' mid' : '') + '">' + (c.raw ? r[c.k] : esc(r[c.k])) + '</td>';
       }).join('') + '</tr>';
     }).join('') + '</tbody></table></div>';
@@ -1374,7 +1374,7 @@ $('btnIssue').onclick = async function () {
 $('btnLogClear').onclick = function () { $('log').innerHTML = ''; };
 
 /* =====================================================================
- * [v4.0] 세션 접기/펼치기 + 모두 접기
+ * [v9.9] 세션 접기/펼치기 + 모두 접기
  * ===================================================================== */
 (function initCollapse() {
   Array.prototype.forEach.call(document.querySelectorAll('.step-hd'), function (hd) {
@@ -1406,7 +1406,7 @@ $('btnLogClear').onclick = function () { $('log').innerHTML = ''; };
 })();
 
 /* =====================================================================
- * [v4.0] 1단계 자동 이어처리 진행상황 폴링 — 버튼 재클릭 불필요
+ * [v9.9] 1단계 자동 이어처리 진행상황 폴링 — 버튼 재클릭 불필요
  * ===================================================================== */
 let pollTimer = null;
 function startStage1Polling() {
@@ -1435,7 +1435,7 @@ function stopStage1Polling() {
 }
 
 /* =====================================================================
- * [v4.0] 행 클릭 인라인 수정 — 납품건 ID(제외 시)는 서버가 자동 분해·기록
+ * [v9.9] 행 클릭 인라인 수정 — 납품건 ID(제외 시)는 서버가 자동 분해·기록
  * ===================================================================== */
 function openRowEdit(clientName) {
   let row = null;
@@ -1495,7 +1495,7 @@ $('exType').addEventListener('change', function () {
   $('exPageField').style.display = (this.value === 'EXCLUDE_PAGE') ? 'flex' : 'none';
 });
 
-log('세금계산서 컨트롤 타워 v4.0 준비 완료. 집계월 선택 → 스냅샷 → 진단 → 실행 순서로 진행하세요. 1단계 잔여 건은 서버가 자동 이어처리합니다.');
+log('세금계산서 컨트롤 타워 v9.9 준비 완료. 집계월 선택 → 스냅샷 → 진단 → 실행 순서로 진행하세요. 1단계 잔여 건은 서버가 자동 이어처리합니다.');
 loadExceptions(true);
 </script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
@@ -1503,7 +1503,7 @@ loadExceptions(true);
 
 <script>
 /* =====================================================================
- * [v4.0] UI 패치 — 원본 코드는 그대로 두고 아래에서 덧입힙니다.
+ * [v9.9] UI 패치 — 원본 코드는 그대로 두고 아래에서 덧입힙니다.
  *   1) 섹션별 접기/펼치기 버튼
  *   2) 모든 표에 표시 전용 No. 열 (연동값 아님 — 화면 전용)
  *   3) 1단계: 큐 + 브라우저 자동 연속 호출 (6분 제한 근본 해결)
@@ -1948,7 +1948,7 @@ loadExceptions(true);
 <script>
 /* =====================================================================
  * [v6.0] 상단 툴바 · 단계 내비게이션 · 매뉴얼 전용 화면 · 보류(발행 유보) 대기
- *  - 기존 v4.0 스크립트/함수는 그대로 두고, 여기서 UI만 덧입힙니다(추가 전용).
+ *  - 기존 v9.9 스크립트/함수는 그대로 두고, 여기서 UI만 덧입힙니다(추가 전용).
  * ===================================================================== */
 (function () {
   'use strict';
@@ -2728,6 +2728,389 @@ loadExceptions(true);
 })();
 
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script>
+/* =====================================================================
+ * [v10.2] UI ADD-ON — 「전자세금계산서 레이아웃 극대화」 요구사항 반영
+ *   기존 화면/스크립트/함수는 하나도 수정하지 않고 뒤에서 덧입힙니다.
+ *   R1. 명칭 변경: ② 계산서 수정발행 → ① 계산서 수정발행 / ① 행 수정 → ② 행 수정
+ *   R2. ① 패널 거래처 검색 자동완성(입력 즉시 추천 목록 → 클릭 선택 → 정보 연동)
+ *   R3. 발행비율 적용 대상 선택(기본: 발행수량) + 분수/소수/% 입력 → 소수점 첫째 자리 버림
+ *   R4. 구(舊) 예외 입력 폼 숨김 (① 계산서 수정발행 + ② 행 수정 두 칸으로 정리)
+ *   R5. 등록 예외 리스트: 명칭 표기 + [⤴ 당월 적용] 버튼 + [🔄 새로고침] 바
+ *       (취소 후 즉시 목록 재반영, 고정 거래처만 화면에 유지)
+ * ===================================================================== */
+(function () {
+  'use strict';
+  function g(id) { return document.getElementById(id); }
+  function fnum102(v) { if (v === null || v === undefined || v === '') return '-'; return (Math.round(Number(v) * 100) / 100).toLocaleString('ko-KR'); }
+  function fwon102(v) { if (v === null || v === undefined || v === '') return '-'; return (Math.round(Number(v) || 0)).toLocaleString('ko-KR') + '원'; }
+  function fesc102(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function curMonthSafe() { var m = g('month'); return m ? m.value : ''; }
+
+  /* [R5-전제] client_list 응답을 항상 최신으로 캡처 (api 함수 자체는 그대로, 결과만 기록) */
+  if (window.api && !window.__v102ApiWrapped) {
+    var _api102 = window.api;
+    window.api = async function (action, extra) {
+      var d = await _api102(action, extra);
+      try { if (action === 'client_list') window.__v102Clients = d; } catch (e) {}
+      return d;
+    };
+    window.__v102ApiWrapped = true;
+  }
+
+  /* ---------------- [R1] 명칭 변경 ---------------- */
+  function renameV102() {
+    var h3 = document.querySelector('#v10ExactPanel h3');
+    if (h3) h3.innerHTML = '① 계산서 수정발행 <span class="badge b-info">거래처 검색·선택 → 유형 선택 → 실제 발행값 입력 → 예외 등록</span>';
+    var note = document.querySelector('#rowEditBar .rowedit-note');
+    if (note) note.textContent = '② 행 수정 — 리스트에서 [✎ 수정]을 누른 거래처가 여기에 연결됩니다';
+  }
+  renameV102(); setTimeout(renameV102, 1000);
+
+  /* ---------------- [R3] 발행비율 적용 대상 선택 (기본: 발행수량) ---------------- */
+  var ratioSel = document.createElement('select');
+  ratioSel.id = 'v10RatioTarget';
+  ratioSel.style.cssText = 'min-width:230px;font-weight:700';
+  ratioSel.innerHTML =
+    '<option value="qty">비율 적용 대상: 발행수량 (기본 — 금액은 단가 자동 계산)</option>' +
+    '<option value="amt">비율 적용 대상: 발행금액</option>' +
+    '<option value="both">비율 적용 대상: 둘 다 (수량·금액 각각)</option>';
+  var rEl = g('v10Ratio');
+  if (rEl && rEl.parentNode) rEl.parentNode.insertBefore(ratioSel, rEl);
+
+  /* [R3] 비율 계산 미리보기 (적용 대상 기준) */
+  var pv2 = document.createElement('div');
+  pv2.id = 'v10Preview2';
+  pv2.className = 'v10-preview';
+  pv2.style.display = 'none';
+  var pv1 = g('v10Preview');
+  if (pv1 && pv1.parentNode) pv1.insertAdjacentElement('afterend', pv2);
+
+  /* 분수 파서 — 서버(parseFractionV10_)와 동일 규칙: "2/3", "1/4", "0.6667", "66%", "66" 모두 허용 */
+  function frac102(v) {
+    if (v === null || v === undefined || v === '') return null;
+    var s = String(v).trim();
+    var m = s.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+    if (m) { var den = Number(m[2]); if (!den || den < 0) return null; return Number(m[1]) / den; }
+    var n = Number(s.replace(/[,\s%]/g, ''));
+    if (isNaN(n)) return null;
+    return n > 1 ? n / 100 : n;
+  }
+  function base102() {
+    var cl = (g('v10Client') && g('v10Client').value || '').trim();
+    var rows = (window.__v102Clients && window.__v102Clients.clients) || [];
+    for (var i = 0; i < rows.length; i++) if (rows[i].client === cl) return rows[i];
+    return null;
+  }
+  function previewRatio102() {
+    if (!pv2) return;
+    var t = g('v10Type') ? g('v10Type').value : '';
+    var rTxt = g('v10Ratio') ? g('v10Ratio').value.trim() : '';
+    if (t !== 'SET_EXACT' || !rTxt) { pv2.style.display = 'none'; return; }
+    var r = frac102(rTxt);
+    var c = base102();
+    pv2.style.display = 'block';
+    if (r === null) { pv2.innerHTML = '⚠ 비율 형식을 확인하세요 — 예: 2/3, 1/4, 0.6667, 66%'; return; }
+    if (!c) { pv2.innerHTML = '거래처를 먼저 선택하면 비율 계산이 표시됩니다.'; return; }
+    var bq = Number(c.qty || 0), ba = Number(c.amount || 0);
+    var tgt = ratioSel.value, lines = [];
+    var unit = bq > 0 ? Math.floor(ba / bq) : 0;
+    if (tgt === 'qty' || tgt === 'both') {
+      var q = Math.floor(bq * r);
+      var a = (g('v10Amt').value !== '') ? Number(g('v10Amt').value) : Math.floor(q * unit);
+      lines.push('발행수량 = 출고박스 ' + fnum102(bq) + ' × ' + fesc102(rTxt) + ' = ' + fnum102(bq * r) + ' → <b>' + fnum102(q) + '</b> (소수점 첫째 자리 버림)');
+      lines.push('발행금액 = ' + fnum102(q) + '박스 × 단가 ' + fwon102(unit) + ' = <b>' + fwon102(a) + '</b>');
+    }
+    if (tgt === 'amt' || tgt === 'both') {
+      var a2 = Math.floor(ba * r);
+      lines.push('발행금액 = 출고금액 ' + fwon102(ba) + ' × ' + fesc102(rTxt) + ' = <b>' + fwon102(a2) + '</b> (버림)');
+      if (tgt === 'both' && bq > 0) lines.push('(참고) 금액 기준 단가 = ' + fwon102(Math.floor(a2 / bq)));
+    }
+    pv2.innerHTML = lines.join('<br>');
+  }
+  ['v10Qty', 'v10Amt', 'v10Ratio', 'v10Client'].forEach(function (id) {
+    var el = g(id);
+    if (el) { el.addEventListener('input', previewRatio102); el.addEventListener('change', previewRatio102); }
+  });
+  ratioSel.addEventListener('change', previewRatio102);
+  var ty102 = g('v10Type');
+  if (ty102) ty102.addEventListener('change', previewRatio102);
+
+  /* ---------------- [R2] 거래처 검색 자동완성 ----------------
+     입력 즉시 이번 달 출고 거래처 추천 목록이 입력창 아래에 나타나고,
+     추천을 클릭하면 거래처가 확정되어 출고건/출고박스/출고금액/발행박스가 자동 연동됩니다. */
+  var sg = document.createElement('div');
+  sg.id = 'v10ClientSuggest';
+  sg.style.cssText = 'position:fixed;z-index:150;display:none;background:#fff;border:1px solid #BFD3FF;border-radius:10px;box-shadow:0 12px 30px rgba(8,21,43,.25);max-height:240px;overflow:auto;min-width:260px';
+  document.body.appendChild(sg);
+  function hideSg() { sg.style.display = 'none'; }
+  var sgHits = [];
+  function renderSg() {
+    var cli = g('v10Client'); if (!cli) return;
+    var q = cli.value.trim().toLowerCase();
+    if (!q) { hideSg(); return; }
+    var rows = (window.__v102Clients && window.__v102Clients.clients) || [];
+    sgHits = rows.filter(function (x) { return String(x.client || '').toLowerCase().indexOf(q) >= 0; }).slice(0, 8);
+    if (!sgHits.length) { hideSg(); return; }
+    sg.innerHTML = sgHits.map(function (x, i) {
+      return '<div data-v102sg="' + i + '" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #EEF2F7;font-size:12.5px">' +
+        '<b>' + fesc102(x.client) + '</b>' +
+        '<span style="color:#64748B"> · 출고 ' + fnum102(x.qty) + '박스 / ' + fwon102(x.amount) + '</span></div>';
+    }).join('');
+    var rc = cli.getBoundingClientRect();
+    sg.style.left = rc.left + 'px'; sg.style.top = (rc.bottom + 4) + 'px'; sg.style.width = Math.max(rc.width, 260) + 'px';
+    sg.style.display = 'block';
+    Array.prototype.forEach.call(sg.querySelectorAll('[data-v102sg]'), function (d) {
+      d.onmousedown = function (ev) {
+        ev.preventDefault();
+        var cli2 = g('v10Client'); if (!cli2) return;
+        cli2.value = sgHits[Number(d.getAttribute('data-v102sg'))].client;
+        hideSg();
+        cli2.dispatchEvent(new Event('change', { bubbles: true }));
+        setTimeout(previewRatio102, 50);
+      };
+    });
+  }
+  var cli102 = g('v10Client');
+  if (cli102) {
+    cli102.addEventListener('input', renderSg);
+    cli102.addEventListener('blur', function () { setTimeout(hideSg, 180); });
+    cli102.setAttribute('autocomplete', 'off');
+  }
+
+  /* ---------------- [R4] 구(舊) 예외 입력 폼 숨김 ----------------
+     유형/거래처/납품건ID/수량 또는 금액/비율/사유/[예외 등록] — 자리만 차지하던 구 폼.
+     내부 로직이 참조하므로 요소는 남기고 화면에서만 제거(= 삭제와 동일한 효과). */
+  try {
+    var exType0 = g('exType');
+    if (exType0) { var lf = exType0.closest('.form'); if (lf) lf.style.display = 'none'; }
+  } catch (e) {}
+
+  /* =====================================================================
+   * [R5] 등록 예외 리스트 — 명칭 표기 + [⤴ 당월 적용] + [🔄 새로고침] 바
+   *   loadExceptions 를 감싸서 매 렌더링 뒤 자동으로 덧입힙니다.
+   *   · [취소] 후 원본이 loadExceptions(true) 를 다시 부르므로 목록이 즉시 재반영됩니다.
+   *   · 고정 거래처(📌 박스)는 예외 취소와 무관하게 그대로 유지됩니다.
+   * ===================================================================== */
+  var EX_LABEL_V102 = {
+    HOLD: '① 발행보류 (귀속월 발행처리)', DEFER: '① 발행보류 (귀속월 발행처리)',
+    EXCLUDE_CLIENT: '② 거래처 전체 제외', FIXED_EXCLUDE: '② 고정 거래처 (거래처 전체 제외 대기)',
+    SET_EXACT: '③ 거래처 수정발행 (수량/금액/비율)',
+    ISSUED_ALREADY: '④ 기발행완료 (납품건별 제외)', EXCLUDE_PAGE: '납품건 제외',
+    SET_QTY: '③ 거래처 수정발행 (구: 수량 지정)', SET_QTY_RATIO: '③ 거래처 수정발행 (구: 수량 비율)',
+    SET_AMOUNT: '③ 거래처 수정발행 (구: 금액 수정)', ADD_AMOUNT: '③ 거래처 수정발행 (구: 금액 추가)',
+    CARRY_ISSUE: '보류 해소분 발행'
+  };
+  var APPLY_MAP = {
+    HOLD: 'HOLD', DEFER: 'HOLD', EXCLUDE_CLIENT: 'EXCLUDE_CLIENT', FIXED_EXCLUDE: 'EXCLUDE_CLIENT',
+    SET_EXACT: 'SET_EXACT', ISSUED_ALREADY: 'ISSUED_ALREADY', EXCLUDE_PAGE: 'ISSUED_ALREADY',
+    SET_QTY: 'SET_EXACT', SET_QTY_RATIO: 'SET_EXACT', SET_AMOUNT: 'SET_EXACT', ADD_AMOUNT: 'SET_EXACT'
+  };
+  function excs102() { return (window.__v102Clients && window.__v102Clients.exceptions) || []; }
+
+  function decorateExList() {
+    var host = g('exOut'); if (!host) return;
+    /* 명칭 바 (매 렌더마다 새로 그려지므로 매번 삽입) */
+    if (!g('v102ExBar')) {
+      var bar = document.createElement('div');
+      bar.id = 'v102ExBar';
+      bar.style.cssText = 'display:flex;gap:8px;align-items:center;margin:0 0 8px;flex-wrap:wrap';
+      bar.innerHTML =
+        '<b style="font-size:13px">📋 등록 예외 리스트</b>' +
+        '<span class="badge b-warn">보류 · 제외 · 수정발행 · 기발행</span>' +
+        '<button class="btn btn-ghost btn-sm" id="v102ExRefresh" type="button">🔄 새로고침</button>' +
+        '<span class="hint" style="margin:0">행의 [⤴ 당월 적용]을 누르면 그 값이 ① 계산서 수정발행 패널에 채워집니다 → 값 확인/수정 후 [예외 등록]을 눌러야 이번 달에 최종 반영됩니다.</span>';
+      host.insertBefore(bar, host.firstChild);
+      var rf = g('v102ExRefresh');
+      if (rf) rf.onclick = async function () {
+        busy(rf, true);
+        try { refreshE102(); log('등록 예외 리스트 새로고침 완료', 'ok'); }
+        catch (e) { toast(e.message, 'err'); }
+        busy(rf, false, '🔄 새로고침');
+      };
+    }
+    /* 유형 라벨 통일 + ③ 수정발행 값 표시 + [⤴ 당월 적용] 버튼 */
+    Array.prototype.forEach.call(host.querySelectorAll('button[data-exdel]'), function (delBtn) {
+      var tr = delBtn.closest('tr'); if (!tr || tr.getAttribute('data-v102done')) return;
+      tr.setAttribute('data-v102done', '1');
+      var id = delBtn.getAttribute('data-exdel');
+      var e = excs102().filter(function (x) { return String(x.id) === String(id); })[0];
+      if (!e) return;
+      if (tr.cells && tr.cells[0]) tr.cells[0].innerHTML = '<span class="badge b-warn">' + fesc102(EX_LABEL_V102[e.type] || e.type) + '</span>';
+      if (tr.cells && tr.cells[3] && e.type === 'SET_EXACT') {
+        var parts = [];
+        if (e.qty !== null && e.qty !== undefined && e.qty !== '') parts.push(fnum102(e.qty) + '박스');
+        if (e.amount !== null && e.amount !== undefined && e.amount !== '') parts.push(fwon102(e.amount));
+        if (e.ratio !== null && e.ratio !== undefined && e.ratio !== '') parts.push('비율 ' + fesc102(e.ratio));
+        if (parts.length) tr.cells[3].textContent = parts.join(' · ');
+      }
+      var ap = document.createElement('button');
+      ap.className = 'btn btn-ghost btn-sm';
+      ap.type = 'button';
+      ap.textContent = '⤴ 당월 적용';
+      ap.title = '이 예외 값을 ① 계산서 수정발행 패널로 불러오기';
+      ap.style.marginRight = '4px';
+      delBtn.parentNode.insertBefore(ap, delBtn);
+      ap.onclick = function () { applyCurrent102(e); };
+    });
+  }
+
+  function applyCurrent102(e) {
+    var cli = g('v10Client'), ty = g('v10Type');
+    if (!cli || !ty) return;
+    cli.value = e.clientName || '';
+    ty.value = APPLY_MAP[e.type] || 'SET_EXACT';
+    if (g('v10Qty')) g('v10Qty').value = (e.qty === null || e.qty === undefined) ? '' : e.qty;
+    if (g('v10Amt')) g('v10Amt').value = (e.amount === null || e.amount === undefined) ? '' : e.amount;
+    if (g('v10Ratio')) g('v10Ratio').value = (e.ratio === null || e.ratio === undefined || e.ratio === '') ? '' : e.ratio;
+    if (g('v10Reason')) g('v10Reason').value = '[당월 적용 ' + (e.month || '') + '] ' + (e.reason || '');
+    ty.dispatchEvent(new Event('change', { bubbles: true }));
+    cli.dispatchEvent(new Event('change', { bubbles: true }));
+    setTimeout(function () { previewRatio102(); }, 300);
+    var panel = g('v10ExactPanel');
+    if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var isPage = (e.type === 'EXCLUDE_PAGE' || e.type === 'ISSUED_ALREADY');
+    log('[당월 적용] ' + (EX_LABEL_V102[e.type] || e.type) + ' / ' + (e.clientName || '') + ' → ① 계산서 수정발행 패널에 불러왔습니다. 값 확인 후 [예외 등록]을 누르면 이번 달(' + curMonthSafe() + ')에 반영됩니다.', 'ok');
+    toast(isPage ? '당월 적용 완료 — 납품건 목록에서 대상 건을 다시 체크한 뒤 [예외 등록]하세요.' : '당월 적용 완료 — 값 확인/수정 후 [예외 등록]을 누르면 이번 달에 최종 반영됩니다.', 'ok');
+  }
+
+  /* E 세션의 원본 [🔄 새로고침] 버튼을 재사용 (예외 + 거래처 목록 동시 재조회) */
+  function refreshE102() {
+    var hit = null;
+    Array.prototype.forEach.call(document.querySelectorAll('.step'), function (sec) {
+      var noEl = sec.querySelector('.step-no');
+      if (noEl && noEl.textContent.trim() === 'E') hit = sec;
+    });
+    var b = hit ? hit.querySelector('.v10-refresh') : null;
+    if (b) b.click();
+    else if (window.loadExceptions) window.loadExceptions(true);
+  }
+
+  /* loadExceptions 감싸기 — 매 렌더링 뒤 자동 덧입힘 */
+  if (window.loadExceptions && !window.__v102ExWrapped) {
+    var _origLoad = window.loadExceptions;
+    window.loadExceptions = async function (silent) {
+      var r = await _origLoad(silent);
+      try { decorateExList(); } catch (e) {}
+      return r;
+    };
+    window.__v102ExWrapped = true;
+  }
+
+  /* [R5] 고정 거래처 박스에도 [⤴ 당월 적용] 추가 — [고정 예외 등록]은 그대로 유지 */
+  var fb = g('v10FixedBox');
+  if (fb) {
+    function decorateFixed102() {
+      Array.prototype.forEach.call(fb.querySelectorAll('button[data-v10fix]'), function (b) {
+        if (b.getAttribute('data-v102ap')) return;
+        b.setAttribute('data-v102ap', '1');
+        var name = b.getAttribute('data-v10fix');
+        var ap = document.createElement('button');
+        ap.className = 'btn btn-ghost btn-sm';
+        ap.type = 'button';
+        ap.textContent = '⤴ 당월 적용';
+        ap.title = '고정 거래처 값을 ① 계산서 수정발행 패널로 불러오기';
+        ap.style.marginRight = '4px';
+        b.parentNode.insertBefore(ap, b);
+        ap.onclick = function () {
+          var cli = g('v10Client'), ty = g('v10Type');
+          if (!cli || !ty) return;
+          cli.value = name; ty.value = 'EXCLUDE_CLIENT';
+          if (g('v10Qty')) g('v10Qty').value = '';
+          if (g('v10Amt')) g('v10Amt').value = '';
+          if (g('v10Ratio')) g('v10Ratio').value = '';
+          if (g('v10Reason')) g('v10Reason').value = '[고정거래처 당월 적용] 거래처 전체 제외';
+          ty.dispatchEvent(new Event('change', { bubbles: true }));
+          cli.dispatchEvent(new Event('change', { bubbles: true }));
+          var panel = g('v10ExactPanel');
+          if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          toast('고정 거래처 당월 적용 — [예외 등록]을 눌러야 이번 달에 반영됩니다.', 'ok');
+          log('[당월 적용] 고정 거래처 / ' + name + ' → ① 계산서 수정발행 패널에 불러왔습니다.', 'ok');
+        };
+      });
+    }
+    var moFb = new MutationObserver(function () { try { decorateFixed102(); } catch (e) {} });
+    moFb.observe(fb, { childList: true, subtree: true });
+    decorateFixed102();
+  }
+
+  /* [R1] 사용 매뉴얼(서버 데이터) 속 명칭도 같이 최신화 */
+  setTimeout(function () {
+    try {
+      var mb = g('manualBody');
+      if (mb) mb.innerHTML = mb.innerHTML.split('② 계산서 수정발행').join('① 계산서 수정발행')
+                                   .split('① 행 수정').join('② 행 수정');
+    } catch (e) {}
+  }, 3500);
+
+  /* ---------------- [R3] 예외 등록 버튼 교체 — 비율 적용 대상 계산 반영 ----------------
+     기존 payload 규칙(SET_EXACT / ISSUED_ALREADY / FIXED_EXCLUDE)은 그대로이고,
+     비율 입력 시 [적용 대상] 선택에 따라 발행수량/발행금액을 자동 계산해 채웁니다. */
+  function pickIds102() {
+    return Array.prototype.map.call(document.querySelectorAll('#v10PagePick [data-v10pg]:checked'),
+      function (cb) { return cb.getAttribute('data-v10pg'); });
+  }
+  var bSave102 = g('v10Save');
+  if (bSave102) {
+    bSave102.onclick = async function () {
+      var t = g('v10Type').value;
+      var cl = g('v10Client').value.trim();
+      if (!cl) { toast('거래처를 선택하세요.', 'err'); g('v10Client').focus(); return; }
+      var payload = { month: curMonthSafe(), type: t, clientName: cl, reason: g('v10Reason').value.trim() };
+      if (t === 'SET_EXACT') {
+        var hasQ = g('v10Qty').value !== '';
+        var hasA = g('v10Amt').value !== '';
+        var rTxt = g('v10Ratio').value.trim();
+        if (!hasQ && !hasA && !rTxt) { toast('발행수량·발행금액·발행비율 중 하나는 입력하세요.', 'err'); return; }
+        if (rTxt && frac102(rTxt) === null) { toast('비율 형식이 올바르지 않습니다. (예: 2/3 또는 0.6667)', 'err'); return; }
+        var q = hasQ ? Number(g('v10Qty').value) : null;
+        var a = hasA ? Number(g('v10Amt').value) : null;
+        if (rTxt) {
+          var r = frac102(rTxt), c = base102();
+          var bq = c ? Number(c.qty || 0) : 0, ba = c ? Number(c.amount || 0) : 0;
+          var tgt = ratioSel.value;
+          if (tgt === 'qty' || tgt === 'both') {
+            if (!hasQ) q = Math.floor(bq * r);
+            if (tgt === 'qty' && !hasA && q !== null) a = Math.floor(q * (bq > 0 ? Math.floor(ba / bq) : 0));
+            if (tgt === 'both' && !hasA) a = Math.floor(ba * r);
+          } else if (tgt === 'amt') {
+            if (!hasA) a = Math.floor(ba * r);
+          }
+        }
+        payload.qty = q; payload.amount = a; payload.ratio = rTxt || null;
+      } else if (t === 'ISSUED_ALREADY') {
+        var ids = pickIds102();
+        if (!ids.length) { toast('납품건 목록에서 이미 발행된 건을 체크하세요.', 'err'); return; }
+        payload.pageId = ids.join(',');
+      } else if (t === 'EXCLUDE_CLIENT') {
+        if (g('v10FixedChk') && g('v10FixedChk').checked) payload.type = 'FIXED_EXCLUDE';
+      }
+      busy(this, true);
+      try {
+        var d = await api('exceptions_save', payload);
+        log('예외 등록: ' + payload.type + ' / ' + cl, 'ok');
+        toast((d && d.summary) || '예외 등록 완료', 'ok');
+        g('v10Qty').value = ''; g('v10Amt').value = ''; g('v10Ratio').value = ''; g('v10Reason').value = '';
+        /* ④ 선택 초기화 — 실제 체크박스를 클릭해 내부 picked 상태까지 깨끗하게 정리 */
+        Array.prototype.forEach.call(document.querySelectorAll('#v10PagePick [data-v10pg]:checked'), function (cb) { cb.click(); });
+        await loadExceptions(true);
+        await loadClients102();
+      } catch (e) { log(e.message, 'err'); toast(e.message, 'err'); }
+      busy(this, false, '예외 등록');
+    };
+  }
+  function loadClients102() { refreshE102(); }
+
+  /* ---------------- 초기 실행: 랩핑 후 첫 렌더를 덧입힌 상태로 다시 그리기 ---------------- */
+  setTimeout(function () { try { refreshE102(); } catch (e) {} }, 1500);
+})();
+</script>
+
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html><script>
