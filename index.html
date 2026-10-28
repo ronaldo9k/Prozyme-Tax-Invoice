@@ -583,7 +583,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwgIBdxyyM8EByT2Gccou8qKq-esarWP1S3U8UvTogDziLF5fG4R4doY83AO3d2tieG/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxmubByfnVdnm8LiPvifqJ-D3IM62D_KXn7KZq4hvUl1oVmo9Ys-V8jQSVtu1Cv9LKo/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3218,6 +3218,7 @@ loadExceptions(true);
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html><script>
 /* =====================================================================
@@ -4400,6 +4401,597 @@ loadExceptions(true);
   buildRowEdit103();
   setTimeout(function () { applyTypeOrder(); decorateList103(); }, 900);
   setTimeout(function () { applyTypeOrder(); decorateList103(); }, 2600);
+})();
+</script>
+
+
+<!-- ===================== [v10.5] ISSUE-FIX ADD-ON (추가 전용 · 기존 UI/스크립트 무변경) ===================== -->
+<script>
+(function () {
+  'use strict';
+
+  /* ===================================================================
+   * v10.5 추가 블록 — 요청한 문제점 4가지만 개선합니다.
+   *   1) ① 계산서 수정발행 — 거래처 '검색' / '선택' 전용 패널 (초성·가나다·즉시 연동)
+   *   2) 보류 → 귀속월 발행 처리 — '해당 보류 건을 찾지 못했습니다' 원인 제거
+   *   3) R 리포트 — 월별(집계월) 예외 리스트 리포트 추가
+   *   4) 누락 검증 ≠ 사유 표기 + 정량적 더블체크 실제 산술 검증
+   *   ※ 기존 함수는 하나도 지우거나 고치지 않고, 필요한 지점만 감싸서(wrapping) 씁니다.
+   * =================================================================== */
+
+  function q(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function n0(v) { var n = Number(v); return isFinite(n) ? n : 0; }
+  function nm(v) { if (v === '' || v === null || v === undefined) return '-'; return (Math.round(n0(v) * 100) / 100).toLocaleString('ko-KR'); }
+  function wn(v) { if (v === '' || v === null || v === undefined) return '-'; return Math.round(n0(v)).toLocaleString('ko-KR') + '원'; }
+  function curM() { var m = q('month'); return m ? m.value : ''; }
+  function ymAdd(m, k) {
+    if (!m || String(m).length < 7) return '';
+    var y = Number(String(m).slice(0, 4)), mo = Number(String(m).slice(5, 7)) + k;
+    y += Math.floor((mo - 1) / 12); mo = ((mo - 1) % 12 + 12) % 12 + 1;
+    return String(y) + '-' + ('0' + mo).slice(-2);
+  }
+  function say(msg, kind) { try { if (window.toast) toast(msg, kind || 'ok'); } catch (e) {} try { if (window.log) log(msg, kind || 'ok'); } catch (e) {} }
+
+  /* ===================================================================
+   * 0) API 래퍼 — 보류 발행 처리 직전에 '보류 건 확정 조회'를 한 번 끼워 넣습니다.
+   *    · 성공하면 정확한 holdId/원월/거래처명으로 원래 요청을 그대로 보냅니다.
+   *    · 실패하면(구버전 서버 등) 아무것도 바꾸지 않고 원래 요청을 그대로 보냅니다.
+   * =================================================================== */
+  var _api = window.api;
+  if (typeof _api === 'function' && !window.__api105) {
+    window.__api105 = true;
+    window.api = async function (action, extra) {
+      if (action === 'hold_issue_v81' && extra && (extra.originMonth || extra.clientName)) {
+        try {
+          var fx = await _api('hold_fix_v105', {
+            originMonth: extra.originMonth, clientName: extra.clientName, holdId: extra.holdId
+          });
+          if (fx && fx.ok) {
+            extra = Object.assign({}, extra, {
+              holdId: fx.holdId, originMonth: fx.originMonth, clientName: fx.clientName
+            });
+            say('[보류 확정] ' + fx.summary, 'ok');
+          }
+        } catch (e) {
+          say('[보류 확인] ' + e.message + ' → 원래 값으로 다시 시도합니다.', 'warn');
+        }
+      }
+      return _api(action, extra);
+    };
+  }
+
+  /* ===================================================================
+   * 1) ① 계산서 수정발행 — 거래처 검색 / 선택 전용 패널
+   *    [🔍 거래처 검색] : 초성(ㅍㄹㅉ)·부분일치·사업자번호로 찾기
+   *    [📋 거래처 선택] : '최종 확정 + 시트 기록' 된 거래처 목록(가나다순)에서 고르기
+   *    선택하면 → 출고건 / 출고박스 / 출고금액 / 발행예정박스·금액이 즉시 표시되고
+   *              기존 ① 패널의 거래처 칸에도 값이 그대로 들어갑니다(= 기존 등록 버튼 그대로 사용)
+   * =================================================================== */
+  var CLS105 = [];      /* 검색 결과 */
+  var SEL105 = null;    /* 선택된 거래처 */
+  var MODE105 = 'search'; /* search | pick */
+
+  function panel105() {
+    if (q('v105Panel')) return;
+    var anchor = q('v10ExactPanel') || q('rowEditBar');
+    if (!anchor || !anchor.parentNode) return;
+    var box = document.createElement('div');
+    box.id = 'v105Panel';
+    box.style.cssText = 'border:2px solid #1E5EFF;border-radius:14px;background:#F7FAFF;padding:12px 13px;margin:0 0 10px';
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">' +
+        '<b style="font-size:13.8px">① 계산서 수정발행 — 거래처 검색 / 선택</b>' +
+        '<span style="font-size:11.5px;color:#1D4ED8;background:#EEF4FF;border:1px solid #BFD3FF;border-radius:999px;padding:2px 9px">v10.5 · 초성검색 · 가나다순 · 선택 즉시 수량·금액 연동</span>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="v105Fold">접기</button>' +
+      '</div>' +
+      '<div id="v105Body">' +
+        '<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">' +
+          '<input id="v105Q" type="text" placeholder="거래처명 또는 초성 (예: ㅍㄹㅉ / 푸로찜 / 사업자번호)" ' +
+            'style="flex:1 1 280px;min-width:220px;padding:9px 11px;border:1px solid #CBD5E1;border-radius:10px">' +
+          '<button class="btn btn-primary btn-sm" type="button" id="v105Search">🔍 거래처 검색</button>' +
+          '<button class="btn btn-ghost btn-sm" type="button" id="v105Pick">📋 거래처 선택</button>' +
+          '<button class="btn btn-ghost btn-sm" type="button" id="v105Sort">가나다순</button>' +
+          '<button class="btn btn-ghost btn-sm" type="button" id="v105Reset">초기화</button>' +
+        '</div>' +
+        '<div id="v105Note" style="margin-top:6px;font-size:11.8px;color:#33507A">' +
+          '· <b>거래처 검색</b>은 초성·글자 일부·사업자번호로 찾습니다. · <b>거래처 선택</b>은 <b>최종 확정 + 시트 기록</b>된 거래처를 가나다순으로 보여줍니다.' +
+        '</div>' +
+        '<div id="v105List" style="margin-top:8px"></div>' +
+        '<div id="v105Info" style="margin-top:8px"></div>' +
+        '<div id="v105Link" style="margin-top:8px"></div>' +
+      '</div>';
+    anchor.parentNode.insertBefore(box, anchor);
+
+    var fold = q('v105Fold');
+    if (fold) fold.onclick = function () {
+      var b = q('v105Body');
+      if (!b) return;
+      var hide = b.style.display !== 'none';
+      b.style.display = hide ? 'none' : 'block';
+      fold.textContent = hide ? '펼치기' : '접기';
+    };
+    var sBtn = q('v105Search'); if (sBtn) sBtn.onclick = function () { MODE105 = 'search'; load105(); };
+    var pBtn = q('v105Pick'); if (pBtn) pBtn.onclick = function () { MODE105 = 'pick'; load105(); };
+    var zBtn = q('v105Sort'); if (zBtn) zBtn.onclick = function () {
+      CLS105.sort(function (a, b) { return String(a.client).localeCompare(String(b.client), 'ko'); });
+      renderList105();
+    };
+    var rBtn = q('v105Reset'); if (rBtn) rBtn.onclick = function () {
+      SEL105 = null;
+      if (q('v105Q')) q('v105Q').value = '';
+      CLS105 = []; renderList105(); renderInfo105();
+      var lk = q('v105Link'); if (lk) lk.innerHTML = '';
+    };
+    var inp = q('v105Q');
+    if (inp) {
+      var tmr = null;
+      inp.addEventListener('input', function () {
+        if (tmr) clearTimeout(tmr);
+        tmr = setTimeout(function () { MODE105 = 'search'; load105(true); }, 260);
+      });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { MODE105 = 'search'; load105(); } });
+    }
+  }
+
+  async function load105(silent) {
+    var m = curM();
+    if (!m) { if (!silent) say('상단에서 집계월을 먼저 선택하세요.', 'err'); return; }
+    var host = q('v105List');
+    if (host && !silent) host.innerHTML = '<div class="note info">불러오는 중…</div>';
+    try {
+      var d = await window.api('client_search_v105', {
+        month: m, q: (q('v105Q') ? q('v105Q').value.trim() : ''), mode: MODE105
+      });
+      CLS105 = d.clients || [];
+      renderList105();
+      if (!silent) say(d.summary, 'ok');
+    } catch (e) {
+      if (host) host.innerHTML = '<div class="note err">거래처 검색 실패 — ' + esc(e.message) + '</div>';
+    }
+  }
+
+  function renderList105() {
+    var host = q('v105List');
+    if (!host) return;
+    if (!CLS105.length) {
+      host.innerHTML = '<div class="note warn">조건에 맞는 거래처가 없습니다. (초성 예: ㅍㄹㅉ · 이름 일부 · 사업자번호 숫자)</div>';
+      return;
+    }
+    var rows = CLS105.slice(0, 300).map(function (c) {
+      var on = SEL105 && SEL105.client === c.client;
+      return '<tr data-c="' + esc(c.client) + '" style="cursor:pointer;' + (on ? 'background:#EEF4FF' : '') + '">' +
+        '<td><b>' + esc(c.client) + '</b>' +
+          (c.finalized ? ' <span class="badge b-ok">확정·기록</span>' : '') +
+          (c.hasMonth ? '' : ' <span class="badge b-neutral">이번 달 출고 없음</span>') + '</td>' +
+        '<td style="color:#64748B">' + esc(c.cho || '') + '</td>' +
+        '<td>' + esc(c.regNo || '-') + '</td>' +
+        '<td class="num">' + nm(c.pages) + '</td>' +
+        '<td class="num">' + nm(c.qty) + '</td>' +
+        '<td class="num">' + wn(c.amount) + '</td>' +
+        '<td class="num">' + nm(c.issuedQty) + '</td>' +
+        '<td class="num">' + wn(c.issuedAmount) + '</td>' +
+        '<td>' + (on ? '<span class="badge b-info">선택됨</span>' : '<button class="btn btn-ghost btn-sm" type="button" data-pick="' + esc(c.client) + '">선택</button>') + '</td>' +
+        '</tr>';
+    }).join('');
+    host.innerHTML =
+      '<div class="tblwrap" style="max-height:260px;overflow:auto"><table><thead><tr>' +
+        '<th>거래처</th><th>초성</th><th>사업자번호</th><th class="num">출고건</th><th class="num">출고박스</th>' +
+        '<th class="num">출고금액</th><th class="num">발행예정박스</th><th class="num">발행예정금액</th><th>선택</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="hint" style="margin:5px 0 0">' + CLS105.length + '곳' +
+        (CLS105.length > 300 ? ' (상위 300곳 표시 — 검색어로 좁히세요)' : '') + ' · 행을 눌러도 선택됩니다.</p>';
+    Array.prototype.forEach.call(host.querySelectorAll('tr[data-c]'), function (tr) {
+      tr.onclick = function () { pick105(tr.getAttribute('data-c')); };
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-pick]'), function (b) {
+      b.onclick = function (ev) { if (ev) ev.stopPropagation(); pick105(b.getAttribute('data-pick')); };
+    });
+  }
+
+  function pick105(name) {
+    var c = CLS105.filter(function (x) { return x.client === name; })[0];
+    if (!c) return;
+    SEL105 = c;
+    renderList105();
+    renderInfo105();
+    link105(c);
+  }
+
+  function renderInfo105() {
+    var host = q('v105Info');
+    if (!host) return;
+    if (!SEL105) { host.innerHTML = ''; return; }
+    var c = SEL105;
+    var rate = c.amount ? Math.round((c.issuedAmount / c.amount) * 1000) / 10 : null;
+    host.innerHTML =
+      '<div class="note ok" style="margin:0">' +
+        '<b style="font-size:13px">' + esc(c.client) + '</b>' +
+        (c.regNo ? ' <span style="color:#33507A;font-size:11.6px">사업자번호 ' + esc(c.regNo) + '</span>' : ' <span class="badge b-warn">사업자번호 없음</span>') +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:7px">' +
+          '<span class="badge b-neutral">출고건 ' + nm(c.pages) + '건</span>' +
+          '<span class="badge b-neutral">출고박스 ' + nm(c.qty) + '</span>' +
+          '<span class="badge b-neutral">출고금액 ' + wn(c.amount) + '</span>' +
+          '<span class="badge b-info">발행예정 ' + nm(c.issuedQty) + '박스</span>' +
+          '<span class="badge b-info">발행예정 ' + wn(c.issuedAmount) + '</span>' +
+          (rate === null ? '' : '<span class="badge b-ok">발행률 ' + rate + '%</span>') +
+          (c.note ? '<span class="badge b-warn">' + esc(c.note) + '</span>' : '') +
+        '</div>' +
+        (c.hasMonth ? '' : '<div style="margin-top:6px;color:#B45309;font-size:11.8px">이번 달 집계월(' + esc(curM()) + ')에는 이 거래처 출고가 없습니다. 선택은 되지만 연동값은 0입니다.</div>') +
+      '</div>';
+  }
+
+  /* 선택 → 기존 ① 패널의 거래처 칸에 그대로 넣고 change 이벤트를 발생시켜
+     기존 연동 로직(chips / preview / 납품건 목록)을 그대로 재사용합니다. */
+  function link105(c) {
+    var host = q('v105Link');
+    var old = q('v10Client');
+    if (old) {
+      old.value = c.client;
+      try { old.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+    }
+    if (!host) return;
+    host.innerHTML =
+      '<div class="note info" style="margin:0;font-size:12px">' +
+        '✔ <b>' + esc(c.client) + '</b> 를 ① 계산서 수정발행 입력칸에 넣었습니다. ' +
+        '아래에서 <b>유형(①~④)</b>을 고르고 <b>발행수량 / 발행금액 / 발행비율</b> 중 필요한 값을 넣은 뒤 <b>[예외 등록]</b>을 누르세요.' +
+        '<br><span style="color:#33507A">· 비율을 넣으면 출고박스·출고금액 × 비율(버림)이 미리보기로 계산됩니다. ' +
+        '· 이 거래처 기준값: 출고 ' + nm(c.qty) + '박스 / ' + wn(c.amount) + ' → 발행예정 ' + nm(c.issuedQty) + '박스 / ' + wn(c.issuedAmount) + '</span>' +
+      '</div>';
+  }
+
+  /* ===================================================================
+   * 2) 보류 → 귀속월 발행 처리 : 사전 점검 버튼
+   *    · 패널에 [보류 건 확인] 버튼을 붙여, 누르면 서버에서 실제 보류 행을 다시 찾아
+   *      귀속월/거래처/최초 스냅샷을 보여줍니다. (없으면 후보 목록까지 안내)
+   * =================================================================== */
+  function holdCheck105() {
+    var sel = q('h81Sel');
+    if (!sel) return;
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) { say('보류 건을 먼저 선택하세요.', 'err'); return; }
+    var txt = (opt.textContent || '');
+    var origin = (txt.match(/(\d{4}-\d{2})/) || [])[1] || '';
+    var client = '';
+
+    /* 목록 텍스트(‘2026-09 · 거래처명 · …’)에서 거래처명 추출 */
+    var parts = txt.split('·');
+    if (parts.length >= 2) client = parts[1].trim();
+
+    /* 더 확실한 방법: 목록 select 를 만든 원본 데이터(loadList)의 옵션 value=보류ID */
+    window.api('hold_fix_v105', { originMonth: origin, clientName: client, holdId: opt.value })
+      .then(function (d) {
+        say('보류 건 확인 완료 — ' + d.summary, 'ok');
+        var box = q('h81Snap');
+        if (box) {
+          box.innerHTML = '<b>최초 스냅샷</b> — ' + esc(d.originMonth) + ' 귀속 · ' + esc(d.clientName) +
+            ' · ' + nm(d.snapQty) + '박스 / ' + wn(d.snapAmount);
+        }
+      })
+      .catch(function (e) { say('보류 건 확인 실패 — ' + e.message, 'err'); });
+  }
+
+  function addHoldCheckBtn() {
+    if (q('v105HoldChk')) return;
+    var anchor = q('h81Load');
+    if (!anchor || !anchor.parentNode) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.id = 'v105HoldChk';
+    b.className = 'btn btn-ghost btn-sm';
+    b.textContent = '보류 건 확인';
+    b.title = '시트에 남아 있는 보류 행을 서버에서 다시 확인합니다(귀속월·최초 스냅샷)';
+    b.onclick = holdCheck105;
+    anchor.parentNode.insertBefore(b, anchor.nextSibling);
+  }
+
+  /* ===================================================================
+   * 3) R 리포트 — 월별(집계월) 예외 리스트 리포트
+   * =================================================================== */
+  var DR105 = null;
+
+  function rep105() {
+    if (q('v105Rep')) return;
+    var repFrom = q('repFrom');
+    var sec = repFrom ? repFrom.closest('section.step') : null;
+    var host = sec ? (sec.querySelector('.step-bd') || sec) : null;
+    if (!host) return;
+    var now = curM() || (new Date()).toISOString().slice(0, 7);
+    var box = document.createElement('div');
+    box.id = 'v105Rep';
+    box.style.cssText = 'margin-top:16px;border:2px solid #0F7A3D;border-radius:14px;background:#F6FDF9;padding:12px 13px';
+    box.innerHTML =
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">' +
+        '<b style="font-size:13.8px">🗂 예외 리스트 리포트</b>' +
+        '<span style="font-size:11.5px;color:#0F7A3D;background:#E9F7EF;border:1px solid #A7E0BF;border-radius:999px;padding:2px 9px">v10.5 신규 · 월별(집계월) · 기간 검색</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">' +
+        '<label style="font-size:12px;font-weight:800;color:#334155">기간</label>' +
+        '<input id="v105RFrom" type="month" value="' + esc(ymAdd(now, -5)) + '" style="padding:7px 9px;border:1px solid #CBD5E1;border-radius:9px">' +
+        '<span style="color:#64748B">~</span>' +
+        '<input id="v105RTo" type="month" value="' + esc(now) + '" style="padding:7px 9px;border:1px solid #CBD5E1;border-radius:9px">' +
+        '<button class="btn btn-primary btn-sm" type="button" id="v105RGo">조회</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="v105RAll">전체 기간</button>' +
+        '<select id="v105RType" style="padding:7px 9px;border:1px solid #CBD5E1;border-radius:9px;font-size:12px">' +
+          '<option value="">유형 전체</option>' +
+        '</select>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="v105RPrint">인쇄</button>' +
+      '</div>' +
+      '<div id="v105ROut" style="margin-top:9px"></div>';
+    host.appendChild(box);
+    var go = q('v105RGo'); if (go) go.onclick = function () { loadRep105(); };
+    var all = q('v105RAll'); if (all) all.onclick = function () {
+      if (q('v105RFrom')) q('v105RFrom').value = '';
+      if (q('v105RTo')) q('v105RTo').value = '';
+      loadRep105();
+    };
+    var ty = q('v105RType'); if (ty) ty.onchange = function () { renderRepDetail105(); };
+    var pr = q('v105RPrint'); if (pr) pr.onclick = function () { try { window.print(); } catch (e) {} };
+  }
+
+  async function loadRep105() {
+    var out = q('v105ROut');
+    var btn = q('v105RGo');
+    if (btn) { btn.disabled = true; btn.textContent = '조회 중…'; }
+    if (out) out.innerHTML = '<div class="note info">불러오는 중…</div>';
+    try {
+      var d = await window.api('exception_report_v105', {
+        from: (q('v105RFrom') ? q('v105RFrom').value : '') || '',
+        to: (q('v105RTo') ? q('v105RTo').value : '') || ''
+      });
+      DR105 = d;
+      renderRep105();
+    } catch (e) {
+      if (out) out.innerHTML = '<div class="note err">예외 리스트 조회 실패 — ' + esc(e.message) + '</div>';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '조회'; }
+  }
+
+  function kpiCard(label, value, kind) {
+    return '<div class="kpi ' + (kind || '') + '"><div class="t">' + esc(label) + '</div><div class="v">' + value + '</div></div>';
+  }
+
+  function renderRep105() {
+    var out = q('v105ROut');
+    if (!out || !DR105) return;
+    var t = DR105.totals || {};
+    var h = '<div class="kpis">' +
+      kpiCard('기간', esc((DR105.from || '전체') + ' ~ ' + (DR105.to || '전체')), 'info') +
+      kpiCard('예외 건수', nm(t.count) + '<span class="u">건</span> (활성 ' + nm(t.active) + ')', '') +
+      kpiCard('대상 거래처', nm(t.clients) + '<span class="u">곳</span>', '') +
+      kpiCard('개월 수', nm(t.months) + '<span class="u">개월</span>', '') +
+      kpiCard('실제 발행 금액', wn(t.amount), 'ok') +
+      kpiCard('최초 대비 차액', wn(t.diffAmount), Math.abs(n0(t.diffAmount)) > 0 ? 'warn' : 'ok') +
+      '</div>' +
+      '<div class="note info" style="margin-top:8px">' + esc(DR105.summary || '') + '</div>';
+
+    /* 월별 요약 */
+    h += '<h3 style="font-size:13px;margin:14px 0 8px">① 월별(집계월) 예외 요약</h3>';
+    if (!(DR105.months || []).length) {
+      h += '<div class="note warn">해태 기간에 예외 등록 내역이 없습니다.</div>';
+    } else {
+      h += '<div class="tblwrap"><table><thead><tr><th>집계월</th><th class="num">예외건수</th><th class="num">활성</th>' +
+        '<th class="num">거래처</th><th class="num">발행박스(합)</th><th class="num">실제 발행금액</th>' +
+        '<th class="num">최초 대비 차액</th><th>보기</th></tr></thead><tbody>' +
+        DR105.months.map(function (m) {
+          return '<tr><td><b>' + esc(m.month) + '</b></td>' +
+            '<td class="num">' + nm(m.count) + '</td>' +
+            '<td class="num">' + nm(m.active) + '</td>' +
+            '<td class="num">' + nm(m.clientCount) + '</td>' +
+            '<td class="num">' + nm(m.qty) + '</td>' +
+            '<td class="num">' + wn(m.amount) + '</td>' +
+            '<td class="num">' + (n0(m.diffAmount) === 0 ? '<span class="badge b-ok">0</span>' : wn(m.diffAmount)) + '</td>' +
+            '<td><button class="btn btn-ghost btn-sm" type="button" data-m="' + esc(m.month) + '">이 달만</button></td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }
+
+    /* 유형별 요약 */
+    h += '<h3 style="font-size:13px;margin:14px 0 8px">② 유형별 요약 (①발행보류 / ②전체제외 / ③수정발행 / ④기발행완료)</h3>';
+    h += '<div class="tblwrap"><table><thead><tr><th>유형</th><th class="num">건수</th><th class="num">발행박스</th>' +
+      '<th class="num">발행금액</th><th class="num">최초 대비 차액</th></tr></thead><tbody>' +
+      (DR105.types || []).map(function (x) {
+        return '<tr><td><b>' + esc(x.typeLabel) + '</b></td><td class="num">' + nm(x.count) + '</td>' +
+          '<td class="num">' + nm(x.qty) + '</td><td class="num">' + wn(x.amount) + '</td>' +
+          '<td class="num">' + (n0(x.diffAmount) === 0 ? '-' : wn(x.diffAmount)) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    /* 상세 */
+    h += '<h3 style="font-size:13px;margin:14px 0 8px">③ 예외 리스트 상세</h3><div id="v105RDetail"></div>';
+    out.innerHTML = h;
+
+    /* 유형 필터 채우기 */
+    var ty = q('v105RType');
+    if (ty) {
+      var keep = ty.value;
+      ty.innerHTML = '<option value="">유형 전체</option>' +
+        (DR105.types || []).map(function (x) {
+          return '<option value="' + esc(x.typeLabel) + '">' + esc(x.typeLabel) + ' (' + x.count + ')</option>';
+        }).join('');
+      ty.value = keep || '';
+    }
+    Array.prototype.forEach.call(out.querySelectorAll('[data-m]'), function (b) {
+      b.onclick = function () {
+        if (q('v105RFrom')) q('v105RFrom').value = b.getAttribute('data-m');
+        if (q('v105RTo')) q('v105RTo').value = b.getAttribute('data-m');
+        loadRep105();
+      };
+    });
+    renderRepDetail105();
+  }
+
+  function renderRepDetail105() {
+    var host = q('v105RDetail');
+    if (!host || !DR105) return;
+    var ty = q('v105RType') ? q('v105RType').value : '';
+    var rows = (DR105.rows || []).filter(function (r) { return !ty || r.typeLabel === ty; });
+    if (!rows.length) { host.innerHTML = '<div class="note warn">해당 조건의 예외 내역이 없습니다.</div>'; return; }
+    var shown = rows.slice(0, 500);
+    host.innerHTML =
+      '<div class="tblwrap" style="max-height:460px;overflow:auto"><table><thead><tr>' +
+        '<th>집계월</th><th>유형</th><th>거래처</th><th>상태</th>' +
+        '<th class="num">최초 박스</th><th class="num">최초 금액</th>' +
+        '<th class="num">실제 발행박스</th><th class="num">실제 발행금액</th>' +
+        '<th class="num">차액(금액)</th><th class="num">건수</th><th>사유 / 해소메모</th>' +
+      '</tr></thead><tbody>' +
+      shown.map(function (r) {
+        var st = r.status === '활성'
+          ? '<span class="badge b-warn">활성</span>'
+          : '<span class="badge b-ok">' + esc(r.status) + '</span>';
+        var diff = r.diffAmount;
+        var diffTxt = (diff === null || diff === undefined) ? '-' :
+          (n0(diff) === 0 ? '-' : (n0(diff) > 0 ? '+' : '') + Math.round(n0(diff)).toLocaleString('ko-KR') + '원');
+        return '<tr><td><b>' + esc(r.month) + '</b>' +
+            (r.originMonth && r.originMonth !== r.month ? '<br><span style="font-size:11px;color:#64748B">귀속 ' + esc(r.originMonth) + '</span>' : '') + '</td>' +
+          '<td>' + esc(r.typeLabel) + '</td>' +
+          '<td>' + esc(r.clientName) + '</td>' +
+          '<td>' + st + '</td>' +
+          '<td class="num">' + nm(r.snapQty) + '</td>' +
+          '<td class="num">' + wn(r.snapAmount) + '</td>' +
+          '<td class="num">' + nm(r.qty) + '</td>' +
+          '<td class="num">' + wn(r.amount) + '</td>' +
+          '<td class="num">' + diffTxt + '</td>' +
+          '<td class="num">' + (r.pageCount ? nm(r.pageCount) + '건' : '-') + '</td>' +
+          '<td style="font-size:11.4px;color:#334155">' + esc(r.memo || r.reason || '-') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<p class="hint" style="margin:5px 0 0">' + rows.length + '건' +
+        (rows.length > 500 ? ' (상위 500건 표시)' : '') +
+        ' · 차액 = 실제 발행금액 − 최초 스냅샷 금액(보류/수정발행의 증감)</p>';
+  }
+
+  /* ===================================================================
+   * 4) 누락 검증 ≠ 사유 표기 + 정량적 더블체크(실제 산술)
+   *    · ≠ 이면  "814 ≠ 834 (-20 차이)" 처럼 숫자로 이유를 보여줍니다.
+   *    · 더블체크는 ① 원본스냅샷 금액 = ⑤+④들+조정 의 실제 합계로 검증합니다.
+   * =================================================================== */
+  function pickRowSrc(rows, key) {
+    for (var i = 0; i < rows.length; i++) if (String(rows[i].key) === key) return n0(rows[i].src);
+    return 0;
+  }
+  function pickRowDb(rows, key) {
+    for (var i = 0; i < rows.length; i++) if (String(rows[i].key) === key) return n0(rows[i].db);
+    return 0;
+  }
+
+  function dcHtml(d) {
+    var r2 = d.recon2 || {};
+    var rows = r2.rows || [];
+    var s = r2.sum || {};
+    var idn = r2.identity || {};
+    var h = '<div id="dc105" class="note info" style="margin-top:12px;border:2px solid #1E5EFF">' +
+      '<b style="font-size:13.4px">🔎 누락 검증 · 정량적 더블체크 <span style="font-size:11.4px;color:#1D4ED8">(v10.5 — 실제 산술 계산)</span></b>';
+
+    /* (1) ① vs ② — ≠ 이면 이유를 숫자로 */
+    h += '<div class="tblwrap" style="margin-top:8px"><table><thead><tr>' +
+      '<th>항목</th><th class="num">① 출고 원본(스냅샷)</th><th class="num">② 세금계산서 DB</th>' +
+      '<th class="num">차이</th><th>판정</th></tr></thead><tbody>';
+    rows.forEach(function (x) {
+      var unit = x.unit, diff = n0(x.diff);
+      var tol = (unit === '원') ? 1 : 0.001;
+      var same = Math.abs(diff) < tol;
+      var fmt = function (v) { return unit === '원' ? wn(v) : nm(v) + unit; };
+      var dTxt = (Math.abs(diff) < tol) ? '0' : (diff > 0 ? '+' : '') +
+        (unit === '원' ? Math.round(diff).toLocaleString('ko-KR') : nm(diff)) + unit;
+      var verdict = same
+        ? '<span class="badge b-ok">= 같음</span>'
+        : '<span class="badge b-err">≠ 다름</span> <b style="color:#B3261E">(' +
+            (unit === '원' ? nm(x.src) + ' ≠ ' + nm(x.db) : nm(x.src) + unit + ' ≠ ' + nm(x.db) ) +
+            ', ' + dTxt + ' 차이)</b>';
+      h += '<tr><td>' + esc(x.key) + '</td><td class="num">' + fmt(x.src) + '</td>' +
+        '<td class="num">' + fmt(x.db) + '</td><td class="num">' + dTxt + '</td><td>' + verdict + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+
+    /* (2) 정량적 더블체크 — 실제 산술 */
+    var srcAmt = pickRowSrc(rows, '출고금액');
+    var srcQty = pickRowSrc(rows, '출고박스');
+    var dbAmt = pickRowDb(rows, '출고금액');
+    var a = idn.amount || {}, qq = idn.qty || {};
+    var adjA = n0(idn.adjAmount), adjQ = n0(idn.adjQty);
+
+    var pA = [n0(a.final), n0(a.noBiz), n0(a.exc), n0(a.already), n0(a.defer)];
+    var pQ = [n0(qq.final), n0(qq.noBiz), n0(qq.exc), n0(qq.already), n0(qq.defer)];
+    var sumA = Math.round(pA.reduce(function (x, y) { return x + y; }, 0) + adjA);
+    var sumQ = Math.round((pQ.reduce(function (x, y) { return x + y; }, 0) + adjQ) * 100) / 100;
+    var gapA = Math.round(srcAmt - sumA);
+    var gapQ = Math.round((srcQty - sumQ) * 100) / 100;
+    var okAll = (Math.abs(gapA) < 1) && (Math.abs(gapQ) < 0.001);
+
+    var eqA = pA.map(function (v) { return Math.round(v).toLocaleString('ko-KR'); }).join(' + ') +
+      (adjA ? ' + ' + Math.round(adjA).toLocaleString('ko-KR') + '(조정)' : '') +
+      ' = ' + sumA.toLocaleString('ko-KR');
+
+    h += '<div style="margin-top:10px;padding:9px 10px;border-radius:10px;background:' +
+      (okAll ? '#E9F7EF' : '#FDECEA') + ';border:1px solid ' + (okAll ? '#A7E0BF' : '#F3B7B1') + '">' +
+      '<b>정량적 더블체크 (실제 산술 검증)</b>' +
+      '<div style="margin-top:6px;font-size:12.4px;line-height:1.65">' +
+        '① 원본 스냅샷 출고금액 <b>' + wn(srcAmt) + '</b> (' + nm(srcQty) + '박스)' +
+        '<br>⑤ 최종발행 ' + wn(a.final) + ' + ④ 제외 ' + wn(a.exc) + ' + ④ 기발행 ' + wn(a.already) +
+        ' + ④ 보류 ' + wn(a.defer) + ' + ③ 사업자번호없음 ' + wn(a.noBiz) +
+        (adjA ? ' + 조정 ' + wn(adjA) : '') +
+        ' = <b>' + wn(sumA) + '</b> (' + nm(sumQ) + '박스)' +
+        '<br>산식: <span style="font-family:monospace">' + esc(eqA) + '</span>' +
+        '<br><b style="color:' + (okAll ? '#0F7A3D' : '#B3261E') + '">→ ' +
+          (okAll
+            ? '일치! 설명되지 않은 차액 0원 — 정량적으로 Double Checked!!'
+            : '불일치 — 설명되지 않은 차액 ' + (gapA > 0 ? '+' : '') + gapA.toLocaleString('ko-KR') + '원 / ' +
+              (gapQ > 0 ? '+' : '') + nm(gapQ) + '박스') + '</b>' +
+        (Math.abs(dbAmt - srcAmt) >= 1
+          ? '<br><span style="color:#B45309">※ ① 원본 ' + wn(srcAmt) + ' ≠ ② DB ' + wn(dbAmt) + ' (' +
+            Math.round(srcAmt - dbAmt).toLocaleString('ko-KR') + '원 차이) — 1·2단계 이관 누락을 먼저 확인하세요.</span>'
+          : '') +
+      '</div></div>';
+
+    if (d.checkLine) {
+      h += '<div style="margin-top:8px;font-size:11.8px;color:#334155;white-space:pre-wrap">' +
+        '서버 계산서: ' + esc(d.checkLine) + '</div>';
+    }
+    h += '</div>';
+    return h;
+  }
+
+  var _r3v105 = window.renderStage3;
+  if (typeof _r3v105 === 'function' && !window.__dc105) {
+    window.__dc105 = true;
+    window.renderStage3 = function (d) {
+      _r3v105(d);
+      try {
+        var host = q('s3Out');
+        if (host && d && d.recon2) {
+          var old = q('dc105');
+          if (old && old.parentNode) old.parentNode.removeChild(old);
+          host.insertAdjacentHTML('beforeend', dcHtml(d));
+        }
+      } catch (e) {}
+    };
+  }
+
+  /* ===================================================================
+   * 부팅 — 기존 화면이 다 그려진 뒤 한 번만 붙입니다(전부 추가 방식).
+   * =================================================================== */
+  function boot105() {
+    panel105();
+    addHoldCheckBtn();
+    rep105();
+    if (q('v105Panel') && !q('v105List').getAttribute('data-init')) {
+      q('v105List').setAttribute('data-init', '1');
+      load105(true);
+    }
+  }
+  function bootSeq() {
+    boot105();
+    setTimeout(boot105, 1200);
+    setTimeout(boot105, 2600);
+    setTimeout(boot105, 5200);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSeq);
+  else bootSeq();
+  try {
+    var mo105 = new MutationObserver(function () { boot105(); });
+    mo105.observe(document.body, { childList: true, subtree: false });
+  } catch (e) {}
 })();
 </script>
 
