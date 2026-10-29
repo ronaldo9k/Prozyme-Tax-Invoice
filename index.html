@@ -583,7 +583,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycby_aFiWvE0BKQJOT0DmN2fJSlMW4iO2Y9wYvS6UT3Fm6Zo_slG47V8azAytUQpcW7RQ/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwEF08-53pzOz4QuZqUxEXwkGZxLJtxAZ18TWxfVBwtdX9N2DCxDIig0gM4-bohsKVr/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -4996,568 +4996,714 @@ loadExceptions(true);
 })();
 </script>
 
+</body>
 
 <script>
-/* ===== [v10.6] LAST DANCE UI ADD-ON (추가 전용) ===== */
-/* =====================================================================
- * [v10.6] LAST DANCE — UI ADD-ON (추가 전용)
- *   기존 화면/함수/스타일은 하나도 고치지 않고, 덧붙이기만 합니다.
- *   요청 1 : 📋 등록 예외 리스트 실시간 새로고침 (큰 버튼 + 조회시각)
- *   요청 2 : 🔒 최종 발행종료(집계월 마감) 큰 버튼 + 확인 모달
- *   요청 3 : ⏸→✅ 보류 통합 관리 — 검색 + 새로고침 + 자체 발행처리
- *   요청 4 : 🗂 예외 리스트 리포트 — 취소 제외 안내 + 월별 마감 현황
- *   요청 5 : 보류→귀속월 발행 차액을 3단계 화면에 명시
- * ===================================================================== */
+/* ============================================================================
+ * ██  [v10.6] UI ADD-ON  —  "추가 전용" (기존 화면/스크립트는 한 줄도 삭제하지 않음)
+ * ----------------------------------------------------------------------------
+ *  [요청1] 📋 등록 예외 리스트 실시간화 (서버 v10.6 연동 + 새로고침 + 표시)
+ *  [요청2] 🔒 최종 발행종료(월 마감) 버튼 — [2단계 실행]과 같은 크기·색
+ *  [요청3] ⏸→✅ 보류 통합 관리 — 새로고침 / 보류 검색 / 보류 건 확인
+ *  [요청4] 🗂 예외 리스트 리포트 — 취소 제외 + 📅 월별 최종 예외 등록 리스트
+ *  [요청5] 🔎 보류→귀속월 발행 처리 차액 항 표시
+ *  [요청6] 🚫 전체 취소 버튼
+ *  [요청7] ③ 수정발행 — 수량만/금액만 입력 시 단가 자동계산 미리보기
+ * ========================================================================== */
 (function () {
   'use strict';
+  if (window.__v106Loaded) return;
+  window.__v106Loaded = true;
 
-  function q(id) { return document.getElementById(id); }
+  /* ---------------- 공통 ---------------- */
+  function g(id) { return document.getElementById(id); }
+  function qa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function esc(s) {
     return String(s === null || s === undefined ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-  function nm(v) {
-    var n = Number(v || 0);
-    return n.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+  function n0(v) { return (v === null || v === undefined || v === '') ? 0 : Number(v); }
+  function fn(v) {
+    if (v === null || v === undefined || v === '') return '-';
+    return (Math.round(Number(v) * 100) / 100).toLocaleString('ko-KR');
   }
-  function wn(v) {
-    var n = Math.round(Number(v || 0));
-    return n.toLocaleString('ko-KR') + '원';
+  function fw(v) {
+    if (v === null || v === undefined || v === '') return '-';
+    return (Math.round(Number(v) || 0)).toLocaleString('ko-KR') + '원';
   }
-  function curM() {
-    var el = q('month');
-    if (el && el.value) return el.value;
-    var d = new Date();
-    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+  function cm() { var m = g('month'); return m ? m.value : ''; }
+  function logS(m, k) { try { log(m, k); } catch (e) {} }
+  function toastS(m, k) { try { toast(m, k); } catch (e) {} }
+  function busyS(b, on, label) { try { busy(b, on, label); } catch (e) {} }
+  function ask(t, b, y) {
+    try { return confirmBox(t, b, y); } catch (e) { return Promise.resolve(false); }
   }
-  function say(text, kind) {
-    try {
-      if (typeof window.log === 'function') window.log(text, kind || 'ok');
-      else if (typeof window.toast === 'function') window.toast(text, kind || 'ok');
-    } catch (e) {}
+  function byStep(no) {
+    var hit = null;
+    qa('.step').forEach(function (sec) {
+      var el = sec.querySelector('.step-no');
+      if (el && String(el.textContent || '').trim() === no) hit = sec;
+    });
+    return hit;
   }
-  function toast(text, kind) {
-    try { if (typeof window.toast === 'function') window.toast(text, kind || 'ok'); } catch (e) {}
-  }
-  function btnWait(b, on, label) {
-    if (!b) return;
-    b.disabled = !!on;
-    if (label) b.textContent = on ? '처리 중…' : label;
-  }
-
-  /* 원본 api 를 붙잡아 둡니다(재귀 방지용) */
-  var API = window.api;
-  if (typeof API !== 'function') return;
-
-  /* 보류 목록은 서버 v10.6 창구를 그대로 사용(모양 동일 + 진단 추가) */
-  function apiV106(action, extra) { return API(action, extra); }
-
-  /* ==============================================================
-   * [요청 5] 3단계 결과에 "보류→귀속월 발행 차액" 한 줄 덧붙임
-   * ============================================================== */
-  function carryNote106(d) {
-    var c = d && d.carryAdjV106;
-    if (!c || !c.rows || !c.rows.length) return '';
-    var rows = c.rows.map(function (r) {
-      return '<tr><td>' + esc(r.clientName) + '</td>' +
-        '<td class="num">' + nm(r.baseQty) + '박스</td><td class="num">' + wn(r.baseAmount) + '</td>' +
-        '<td class="num">' + nm(r.issuedQty) + '박스</td><td class="num">' + wn(r.issuedAmount) + '</td>' +
-        '<td class="num"><b>' + nm(r.diffQty) + '박스</b></td>' +
-        '<td class="num"><b>' + wn(r.diffAmount) + '</b></td></tr>';
-    }).join('');
-    return '<div class="note ok" style="margin-top:10px;border:2px solid #0F7A3D">' +
-      '<b style="font-size:13px">🔁 보류 → 귀속월 발행 처리 차액 (설명되는 차액)</b>' +
-      '<div style="margin-top:5px;font-size:12px;color:#334155">' +
-      '아래 차액은 <b>오류가 아닙니다</b>. ① 발행보류 뒤 [보류→귀속월 발행 처리]를 하면서 ' +
-      '출고 대비 실제 발행이 달라진 금액이며, 누락 검증·항등식·정량적 더블체크 <b>세 곳 모두의 조정칸에 이미 더해</b> 두었습니다.' +
-      '</div>' +
-      '<div class="tblwrap" style="margin-top:7px"><table><thead><tr>' +
-      '<th>거래처</th><th class="num">최초 출고박스</th><th class="num">최초 출고금액</th>' +
-      '<th class="num">실제 발행박스</th><th class="num">실제 발행금액</th>' +
-      '<th class="num">차액(수량)</th><th class="num">차액(금액)</th></tr></thead><tbody>' +
-      rows + '</tbody></table></div>' +
-      '<div style="margin-top:6px;font-size:12.2px"><b>합계 차액 · 수량 ' + nm(c.qty) + '박스 / 금액 ' + wn(c.amount) + '</b>' +
-      ' (' + c.clients + '곳) → 검증식 조정칸에 반영됨 ✔</div></div>';
+  function ymAdd(ym, d) {
+    if (!ym) return '';
+    var p = String(ym).split('-');
+    var dt = new Date(Number(p[0]), Number(p[1]) - 1 + d, 1);
+    return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2);
   }
 
-  var _r3 = window.renderStage3;
-  if (typeof _r3 === 'function' && !window.__r3v106) {
-    window.__r3v106 = true;
-    window.renderStage3 = function (d) {
-      _r3(d);
-      try {
-        var host = q('s3Out');
-        if (!host || !d) return;
-        var old = q('v106Carry');
-        if (old && old.parentNode) old.parentNode.removeChild(old);
-        var html = carryNote106(d);
-        if (!html) return;
-        var div = document.createElement('div');
-        div.id = 'v106Carry';
-        div.innerHTML = html;
-        host.appendChild(div);
-      } catch (e) {}
-    };
+  var CSS = document.createElement('style');
+  CSS.textContent =
+    '.v106-lock{display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:12px;padding:5px 11px;border-radius:999px}' +
+    '.v106-lock.closed{background:#EEF2FF;color:#1D4ED8;border:1px solid #BFD3FF}' +
+    '.v106-lock.open{background:#F1F5F9;color:#334155;border:1px solid #CBD5E1}' +
+    '.v106-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 8px}' +
+    '.v106-bar .hint{margin:0}' +
+    '.v106-btn-xl{font-size:14.5px!important;padding:13px 22px!important;border-radius:12px!important;letter-spacing:-.2px;font-weight:900}' +
+    '.v106-search{font-family:inherit;font-size:12px;padding:7px 10px;border-radius:9px;border:1px solid var(--line-2);background:#fff;min-width:170px}' +
+    '.v106-tbl{border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;background:#fff}' +
+    '.v106-tbl table{width:100%;border-collapse:collapse;font-size:12px}' +
+    '.v106-tbl th{background:#F1F5F9;color:#334155;font-weight:900;padding:8px 9px;white-space:nowrap;border-bottom:1px solid #E2E8F0;text-align:left}' +
+    '.v106-tbl td{padding:7px 9px;border-bottom:1px solid #F1F5F9;vertical-align:top}' +
+    '.v106-tbl tr:last-child td{border-bottom:none}' +
+    '.v106-tbl td.num,.v106-tbl th.num{text-align:right;font-variant-numeric:tabular-nums}' +
+    '.v106-card{border:2px solid #0B1B33;border-radius:14px;background:#FBFCFE;padding:12px 13px;margin-top:14px}' +
+    '.v106-chip{font-size:11.3px;font-weight:900;border-radius:999px;padding:2px 9px;border:1px solid #CBD5E1;background:#fff;color:#334155}';
+  document.head.appendChild(CSS);
+
+  /* ##########################################################################
+   * [요청7] ③ 거래처 수정발행 — 단가 자동계산 미리보기
+   *   상황1: 수량만 → 금액 = 수량 × 단가
+   *   상황2: 금액만 → 수량 = ⌊금액 ÷ 단가⌋
+   *   상황3: 둘 다 → 그대로
+   * ######################################################################## */
+  var UP = {};
+
+  function upBox() {
+    var p = g('v10Preview');
+    if (!p) return null;
+    var b = g('v106UpBox');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'v106UpBox';
+      b.style.cssText = 'margin-top:6px;font-size:11.9px;font-weight:800;line-height:1.8;color:#0F7A3D;' +
+        'background:#F6FDF9;border:1px dashed #A7E0BF;border-radius:9px;padding:7px 10px;display:none';
+      p.appendChild(b);
+    }
+    return b;
   }
 
-  /* ==============================================================
-   * [요청 1] 📋 등록 예외 리스트 — 실시간 새로고침
-   * ============================================================== */
-  var LIVE = { rows: [], at: '', count: 0 };
+  function renderUnitPreview() {
+    var box = upBox();
+    if (!box) return;
+    var cli = (g('v10Client') && g('v10Client').value || '').trim();
+    var ty = g('v10Type') ? g('v10Type').value : '';
+    var qEl = g('v10Qty'), aEl = g('v10Amt'), rEl = g('v10Ratio');
+    var qv = qEl && qEl.value !== '' ? Number(qEl.value) : null;
+    var av = aEl && aEl.value !== '' ? Number(aEl.value) : null;
+    var rv = rEl && rEl.value !== '' ? rEl.value : null;
 
-  async function liveExc(silent) {
-    try {
-      var d = await apiV106('exceptions_live_v106', { month: curM() });
-      LIVE.rows = d.rows || [];
-      LIVE.at = d.checkedAt || '';
-      LIVE.count = d.count || 0;
-      paintExcBar(d);
-      return d;
-    } catch (e) {
-      if (!silent) toast('예외 실시간 조회 실패 — ' + e.message, 'err');
-      return null;
+    if (ty !== 'SET_EXACT' || !cli) { box.style.display = 'none'; UP = {}; return; }
+
+    var u = UP[cli];
+    if (!u) {
+      box.style.display = 'block';
+      box.innerHTML = '단가 조회 중…';
+      window.api('unit_price_v106', { month: cm(), clientName: cli }).then(function (d) {
+        UP[cli] = d; renderUnitPreview();
+      }).catch(function () {
+        box.style.display = 'block';
+        box.innerHTML = '⚠ 단가를 조회하지 못했습니다 — 수량·금액을 직접 입력하세요.';
+      });
+      return;
+    }
+    if (!u.unitPrice) {
+      box.style.display = 'block';
+      box.innerHTML = '⚠ 이 거래처의 단가(출고금액÷출고박스)를 찾지 못했습니다 — 수량·금액을 직접 입력해야 합니다.';
+      return;
+    }
+    var price = Number(u.unitPrice);
+    box.style.display = 'block';
+    var head = '이 거래처 단가 <b>' + fw(price) + '</b> <span style="color:#64748B;font-weight:700">(그 달 출고 ' +
+      fn(u.qty) + '박스 / ' + fw(u.amount) + ')</span>';
+
+    if (qv !== null && av !== null) {
+      box.innerHTML = head + '<br>상황3 · 수량 <b>' + fn(qv) + '박스</b> · 금액 <b>' + fw(av) +
+        '</b> — <b>둘 다 입력했으므로 계산 없이 그대로 등록</b>됩니다.';
+    } else if (qv !== null) {
+      box.innerHTML = head + '<br>상황1 · 수량만 입력 → 금액 자동 = ' + fn(qv) + ' × ' + fw(price) +
+        ' = <b>' + fw(Math.round(qv * price)) + '</b> (등록 시 자동으로 채워집니다)';
+    } else if (av !== null) {
+      box.innerHTML = head + '<br>상황2 · 금액만 입력 → 수량 자동 = ' + fw(av) + ' ÷ ' + fw(price) +
+        ' = ' + fn(av / price) + ' → <b>' + fn(Math.floor(av / price)) + '박스</b> (소수점 첫째자리에서 내림)';
+    } else if (rv !== null) {
+      box.innerHTML = head + '<br>비율 <b>' + esc(rv) + '</b> 입력 — 비율 계산식은 기존과 동일합니다.';
+    } else {
+      box.innerHTML = head + '<br>발행수량 · 발행금액 · 발행비율 중 <b>하나만</b> 넣어도 나머지를 자동으로 계산합니다.';
     }
   }
 
-  function paintExcBar(d) {
-    var stamp = q('v106ExStamp');
-    if (stamp) {
-      stamp.innerHTML = '실시간 <b>' + nm(d ? d.count : LIVE.count) + '건</b>' +
-        (d && d.otherActive ? ' · 다른 달 활성 예외 ' + nm(d.otherActive) + '건(이번 달 계산과 무관)' : '') +
-        (d && d.closed ? ' · <span class="badge b-ok">✅ ' + esc(d.closed.status) + '</span>' : '') +
-        ' · 기준시각 <b>' + esc((d && d.checkedAt) || LIVE.at) + '</b>';
-    }
+  function bindUnitPreview() {
+    ['v10Client', 'v10Qty', 'v10Amt', 'v10Ratio', 'v10Type'].forEach(function (id) {
+      var el = g(id);
+      if (!el || el.getAttribute('data-v106up')) return;
+      el.setAttribute('data-v106up', '1');
+      el.addEventListener('change', function () { if (id === 'v10Client') UP = {}; renderUnitPreview(); });
+      el.addEventListener('input', function () { setTimeout(renderUnitPreview, 0); });
+      el.addEventListener('blur', function () { setTimeout(renderUnitPreview, 0); });
+    });
   }
 
-  async function refreshExcAll(btn) {
-    btnWait(btn, true, '🔄 실시간 새로고침');
-    try {
-      var d = await liveExc(false);
-      /* 서버가 이번 달·취소제외로 걸러 내려주므로, 기존 렌더러를 한 번 다시 태웁니다 */
-      if (typeof window.loadExceptions === 'function') {
-        try { await window.loadExceptions(true); } catch (e) {}
-      }
-      paintExcBar(d);
-      say('📋 등록 예외 리스트 새로고침 완료 — ' + curM() + ' ' + nm(d ? d.count : 0) + '건 / 기준 ' +
-        ((d && d.checkedAt) || '-'), 'ok');
-      toast('📋 등록 예외 리스트 — 지금 값으로 갱신했습니다.', 'ok');
-    } catch (e) { toast(e.message, 'err'); }
-    btnWait(btn, false, '🔄 실시간 새로고침');
-  }
+  /* ##########################################################################
+   * [요청1·6] 📋 등록 예외 리스트 — 새로고침 + 🚫 전체 취소 + 실시간 표시
+   * ######################################################################## */
+  function exBar() {
+    var host = g('exOut');
+    if (!host) return null;
+    var bar = g('v106ExBar');
+    if (bar && host.contains(bar)) return bar;
 
-  function addExcBar() {
-    var host = q('exOut');
-    if (!host || q('v106ExBar')) return;
-    var bar = document.createElement('div');
+    bar = document.createElement('div');
     bar.id = 'v106ExBar';
-    bar.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 9px;' +
-      'padding:9px 11px;border-radius:12px;background:#EEF4FF;border:1px solid #BFD3FF';
+    bar.className = 'v106-bar';
     bar.innerHTML =
-      '<b style="font-size:13.4px">📋 등록 예외 리스트 (고정거래처 즐겨찾기)</b>' +
-      '<button class="btn btn-primary" id="v106ExRefresh" type="button" ' +
-        'style="font-size:13.4px;padding:10px 18px">🔄 실시간 새로고침</button>' +
-      '<span id="v106ExStamp" style="font-size:11.6px;color:#1D4ED8;flex:1 1 260px">' +
-        '아직 조회 전입니다 — 버튼을 누르면 지금 값으로 맞춥니다.</span>';
-    /* v10.2 가 만든 작은 바 바로 앞에 끼워 넣습니다 */
-    var old = q('v102ExBar');
-    if (old && old.parentNode === host) host.insertBefore(bar, old);
-    else host.insertBefore(bar, host.firstChild);
-    var b = q('v106ExRefresh');
-    if (b) b.onclick = function () { refreshExcAll(b); };
+      '<b style="font-size:13.2px">📋 등록 예외 리스트 (고정거래처 즐겨찾기)</b>' +
+      '<span class="v106-chip" id="v106ExStamp">실시간</span>' +
+      '<button class="btn btn-ghost btn-sm" type="button" id="v106ExRefresh">🔄 새로고침</button>' +
+      '<button class="btn btn-danger btn-sm" type="button" id="v106ExCancelAll">🚫 전체 취소</button>' +
+      '<span class="hint">리스트는 <b>현재 집계월</b> 기준 · 숫자는 3단계(구글시트 기록)와 <b>같은 계산</b>입니다. 행의 [✎ 수정]을 누르면 위 수정 패널에 채워집니다.</span>';
+    host.insertBefore(bar, host.firstChild);
+
+    var rf = g('v106ExRefresh');
+    if (rf) rf.onclick = function () { refreshAll106(rf, '🔄 새로고침'); };
+
+    var ca = g('v106ExCancelAll');
+    if (ca) ca.onclick = async function () {
+      var month = cm();
+      var ok = await ask('🚫 전체 취소',
+        month + ' 의 "활성" 예외를 전부 취소합니다.\n' +
+        '· 이미 [보류 → 귀속월 발행 처리]로 "해소"된 이력은 보존됩니다.\n' +
+        '· 취소 후 리스트·건수·3단계 계산이 즉시 다시 반영됩니다.\n\n진행할까요?', '전체 취소');
+      if (!ok) return;
+      busyS(ca, true);
+      try {
+        var d = await window.api('exceptions_cancel_all_v106', { month: month });
+        logS(d.summary, 'ok'); toastS(d.summary, 'ok');
+        await refreshAll106(null, null);
+      } catch (e) { logS(e.message, 'err'); toastS(e.message, 'err'); }
+      busyS(ca, false, '🚫 전체 취소');
+    };
+    return bar;
   }
 
-  /* loadExceptions 를 한 번 더 감싸서, 다시 그려질 때마다 바를 보장 + 기준시각 갱신 */
-  if (typeof window.loadExceptions === 'function' && !window.__v106ExWrapped) {
+  function stampEx() {
+    var s = g('v106ExStamp');
+    var d = window.__v106Clients;
+    if (!s) return;
+    if (d && d.stamp) {
+      s.textContent = (d.closed ? '🔒 마감됨 · ' : '🔓 진행중 · ') + d.stamp;
+      s.style.background = d.closed ? '#EEF2FF' : '#E9F7EF';
+      s.style.borderColor = d.closed ? '#BFD3FF' : '#A7E0BF';
+      s.style.color = d.closed ? '#1D4ED8' : '#0F7A3D';
+    } else if (d && d.summary) {
+      s.textContent = '실시간';
+    }
+  }
+
+  /* 예외/거래처/보류/3단계를 한 번에 다시 읽기 */
+  async function refreshAll106(btn, label) {
+    if (btn) busyS(btn, true);
+    try {
+      if (window.loadExceptions) await window.loadExceptions(true);
+      if (window.loadHoldV81) { try { await window.loadHoldV81(); } catch (e) {} }
+      var s3 = g('btnS3Prev'); if (s3) { try { s3.click(); } catch (e) {} }
+      logS('새로고침 완료 — 예외 · 보류 · 3단계 미리보기를 지금 시점으로 다시 계산했습니다.', 'ok');
+    } catch (e) { logS(e.message, 'err'); }
+    if (btn) busyS(btn, false, label || '🔄 새로고침');
+  }
+
+  /* loadExceptions 를 감싸서 → 응답 보관 + 바 생성 + 단가 갱신 */
+  if (window.loadExceptions && !window.__v106ExWrap) {
     var _le = window.loadExceptions;
     window.loadExceptions = async function (silent) {
       var r = await _le(silent);
       try {
-        if (!q('v106ExBar')) addExcBar();
-        if (!q('v106ExStamp') || !LIVE.at || q('v106ExStamp').getAttribute('data-done') !== '1') {
-          var st = q('v106ExStamp');
-          if (st) st.setAttribute('data-done', '1');
-          if (!LIVE.at) await liveExc(true);
-          else paintExcBar(null);
+        var host = g('exOut');
+        if (host) {
+          var bar = g('v102ExBar'); if (bar) bar.textContent = '';
+          var rb = g('v10ReapplyBar');
+          if (rb) rb.style.display = '';
+          exBar();
+          stampEx();
         }
+        UP = {};
+        bindUnitPreview();
+        renderUnitPreview();
       } catch (e) {}
       return r;
     };
-    window.__v106ExWrapped = true;
+    window.__v106ExWrap = true;
   }
 
-  /* [🔄 재반영] 버튼을 크고 잘 보이게 (2단계 실행과 같은 계열 색) */
-  function restyleReapply() {
-    var rb = q('v10Reapply');
-    if (!rb || rb.getAttribute('data-v106')) return;
-    rb.setAttribute('data-v106', '1');
-    rb.className = 'btn btn-primary';
-    rb.style.cssText = 'font-size:13.4px;padding:10px 18px';
-    rb.title = '등록된 예외를 바꾸지 않고 최종 확정 계산을 다시 실행해 엑셀업로드양식에 다시 기록합니다.';
+  /* window.api 응답을 가로채 이번 달 예외/마감 정보 보관 */
+  if (window.api && !window.__v106ApiWrap) {
+    var _api = window.api;
+    window.api = async function (action, extra) {
+      var d = await _api(action, extra);
+      try {
+        if (action === 'client_list' || action === 'client_list_v103' || action === 'client_list_v106') {
+          window.__v106Clients = d;
+          if (d) window.__v102Clients = d;
+        }
+      } catch (e) {}
+      return d;
+    };
+    window.__v106ApiWrap = true;
   }
 
-  /* ==============================================================
-   * [요청 2] 🔒 최종 발행종료 (집계월 마감)
-   * ============================================================== */
-  function ensureCloseModal() {
-    if (q('v106CloseOv')) return;
-    var ov = document.createElement('div');
-    ov.id = 'v106CloseOv';
-    ov.className = 'v10-modal';
-    ov.innerHTML = '<div class="v10-sheet" style="max-width:720px">' +
-      '<div class="v10-shd"><h3 style="margin:0;font-size:15px;font-weight:800" id="v106CloseTitle">🔒 최종 발행종료 (집계월 마감)</h3>' +
-      '<span style="flex:1"></span>' +
-      '<button class="btn btn-ghost btn-sm" id="v106CloseX" type="button">닫기 ✕</button></div>' +
-      '<div class="v10-sbd" id="v106CloseBody"></div>' +
-      '<div class="v10-sbd" style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid #E2E8F0">' +
-        '<button class="btn btn-primary" id="v106CloseOk" type="button" style="font-size:13.4px;padding:10px 18px">마감 실행</button>' +
-        '<button class="btn btn-ghost btn-sm" id="v106CloseForce" type="button">확인 후 강제 마감</button>' +
-        '<span style="flex:1"></span>' +
-        '<button class="btn btn-ghost btn-sm" id="v106CloseCancel" type="button">취소</button>' +
-      '</div></div>';
-    document.body.appendChild(ov);
-    q('v106CloseX').onclick = function () { ov.classList.remove('on'); };
-    q('v106CloseCancel').onclick = function () { ov.classList.remove('on'); };
-    ov.addEventListener('click', function (ev) { if (ev.target === ov) ov.classList.remove('on'); });
-  }
+  /* MutationObserver — 리스트가 다시 그려질 때마다 바/마감표시 유지 */
+  try {
+    var mo = new MutationObserver(function () {
+      try { exBar(); stampEx(); } catch (e) {}
+    });
+    if (g('exOut')) mo.observe(g('exOut'), { childList: true });
+  } catch (e) {}
 
-  function closeBody(d) {
-    var i = d.info || {};
-    var b = d.blockers || [];
-    var h = '<div class="kpis">' +
-      '<div class="kpi info"><div class="t">집계월</div><div class="v">' + esc(d.month) + '</div></div>' +
-      '<div class="kpi ok"><div class="t">최종 발행</div><div class="v">' + nm(i.finalRows) + '<span class="u">행</span></div>' +
-        '<div class="hint" style="margin:2px 0 0">' + wn(i.finalAmount) + '</div></div>' +
-      '<div class="kpi"><div class="t">발행률(금액)</div><div class="v">' +
-        (i.rateAmount === null ? '-' : i.rateAmount + '%') + '</div></div>' +
-      '<div class="kpi ' + (Math.abs(Number(i.diffAmount || 0)) >= 1 ? 'err' : 'ok') + '"><div class="t">설명되지 않은 차액</div>' +
-        '<div class="v">' + wn(i.diffAmount) + '</div><div class="hint" style="margin:2px 0 0">' + nm(i.diffQty) + '박스</div></div>' +
-      '<div class="kpi ' + (i.holds ? 'warn' : 'ok') + '"><div class="t">남은 보류</div><div class="v">' + nm(i.holds) + '<span class="u">건</span></div></div>' +
-      '</div>';
-    if (d.previous) {
-      h += '<div class="note info" style="margin-top:8px"><b>이미 마감된 달입니다</b> — ' +
-        esc(d.previous.at) + ' / ' + esc(d.previous.status) +
-        '. 다시 마감하면 같은 줄이 갱신됩니다(중복 줄이 생기지 않습니다).</div>';
-    }
-    if (b.length) {
-      h += '<div class="note warn" style="margin-top:8px"><b>마감 전 확인 ' + b.length + '건</b><br>· ' +
-        b.map(function (x) { return esc(x); }).join('<br>· ') + '</div>' +
-        '<p class="hint">그래도 이 달을 닫아야 하면 <b>[확인 후 강제 마감]</b>을 누르세요. ' +
-        '상태가 “조건부 마감”으로 기록되고 사유가 [월마감] 시트 비고에 남습니다.</p>';
-    } else {
-      h += '<div class="note ok" style="margin-top:8px"><b>마감 가능</b> — 차액·보류가 모두 정리되었습니다. ' +
-        '[마감 실행]을 누르면 엑셀업로드양식을 다시 기록하고 [월마감] 시트에 마감 기록을 남깁니다.</div>';
-    }
-    if (i.carryAdj && i.carryAdj.rows && i.carryAdj.rows.length) {
-      h += '<div class="note" style="margin-top:8px;background:#F6FDF9">🔁 보류→귀속월 발행 차액 ' +
-        nm(i.carryAdj.qty) + '박스 / ' + wn(i.carryAdj.amount) + ' (' + i.carryAdj.clients + '곳) 은 ' +
-        '검증식 조정칸에 이미 반영되어 있습니다.</div>';
-    }
-    if (i.checkLine) {
-      h += '<div style="margin-top:8px;font-size:11.6px;color:#334155;white-space:pre-wrap">서버 계산서: ' +
-        esc(i.checkLine) + '</div>';
-    }
-    return h;
-  }
+  /* ##########################################################################
+   * [요청2] 🔒 최종 발행종료 (월 마감)  — [2단계 실행(시트 기록)]과 같은 크기·색
+   * ######################################################################## */
+  function closeBar() {
+    var host = qa('#btnS3')[0];
+    if (!host) return;
+    var bar = g('v106CloseBar');
+    if (bar && document.body.contains(bar)) return;
 
-  async function openClose() {
-    ensureCloseModal();
-    var ov = q('v106CloseOv');
-    var body = q('v106CloseBody');
-    body.innerHTML = '<div class="note info">마감 전 점검 중…</div>';
-    ov.classList.add('on');
-    q('v106CloseOk').disabled = true;
-    try {
-      var d = await apiV106('month_close_v106', { month: curM(), execute: false });
-      q('v106CloseTitle').textContent = '🔒 최종 발행종료 (집계월 마감) · ' + curM();
-      body.innerHTML = closeBody(d);
-      q('v106CloseOk').disabled = !d.canClose;
-      q('v106CloseOk').onclick = function () { runClose(this, false); };
-      q('v106CloseForce').onclick = function () { runClose(this, true); };
-    } catch (e) {
-      body.innerHTML = '<div class="note err">마감 점검 실패 — ' + esc(e.message) + '</div>';
-    }
-  }
-
-  async function runClose(btn, force) {
-    var msg = force
-      ? '확인 항목이 남아 있어도 이 달을 마감할까요?\n(상태가 “조건부 마감”으로 기록됩니다)'
-      : '이 달을 최종 발행종료(마감)할까요?\n엑셀업로드양식을 다시 기록하고 [월마감] 시트에 마감 기록을 남깁니다.';
-    if (!window.confirm(msg)) return;
-    btnWait(btn, true, '처리 중…');
-    try {
-      var d = await apiV106('month_close_v106', { month: curM(), execute: true, force: !!force });
-      if (!d.ok) {
-        q('v106CloseBody').innerHTML = closeBody(d);
-        toast('마감 보류 — 확인 항목을 먼저 정리하세요.', 'warn');
-      } else {
-        q('v106CloseBody').innerHTML =
-          '<div class="note ok"><b>' + esc(d.summary) + '</b></div>' +
-          '<div class="note" style="margin-top:8px;background:#F8FAFF">[월마감] 시트에 기록했습니다 — ' +
-          esc(d.close.month) + ' / ' + esc(d.close.at) + ' / ' + esc(d.close.status) + '</div>';
-        say(d.summary, 'ok');
-        toast('🔒 ' + curM() + ' 최종 발행종료 완료', 'ok');
-        try { await liveExc(true); } catch (e) {}
-      }
-    } catch (e) { toast(e.message, 'err'); }
-    btnWait(btn, false, force ? '확인 후 강제 마감' : '마감 실행');
-  }
-
-  function addCloseBtn() {
-    if (q('v106CloseBtn')) return;
-    var b3 = q('btnS3');
-    if (!b3 || !b3.parentNode) return;
-    var b = document.createElement('button');
-    b.className = 'btn btn-primary';
-    b.id = 'v106CloseBtn';
-    b.type = 'button';
-    b.style.cssText = 'font-size:14px;padding:12px 22px';
-    b.textContent = '🔒 최종 발행종료 (집계월 마감)';
-    b.title = '이 집계월의 세금계산서 발행을 끝냅니다 — 엑셀업로드양식 재기록 + [월마감] 시트에 기록';
-    b.onclick = openClose;
-    b3.parentNode.insertBefore(b, b3.nextSibling);
-  }
-
-  /* ==============================================================
-   * [요청 3] ⏸→✅ 보류 통합 관리 — 검색 + 새로고침 + 자체 발행처리
-   * ============================================================== */
-  var HROWS = [];
-
-  function holdBox() {
-    var host = q('v106HoldBox');
-    if (host) return host;
-    var panel = q('holdPanel81');
-    if (!panel) return null;
-    host = document.createElement('div');
-    host.id = 'v106HoldBox';
-    host.style.cssText = 'margin-top:12px;border:2px solid #B45309;border-radius:13px;background:#FFFBF0;padding:11px 12px';
-    host.innerHTML =
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-        '<b style="font-size:13.4px;color:#8A4B08">⏸→✅ 보류 대기 실시간 목록</b>' +
-        '<input id="v106HoldQ" type="text" placeholder="거래처/사업자번호 검색 (비우면 전체)" ' +
-          'style="flex:1 1 200px;min-width:170px;font-family:inherit;font-size:12.4px;padding:8px 10px;' +
-          'border-radius:9px;border:1px solid #E5C98A">' +
-        '<button class="btn btn-primary" id="v106HoldSearch" type="button" style="font-size:13px;padding:9px 15px">🔍 보류 건 검색</button>' +
-        '<button class="btn btn-ghost" id="v106HoldRefresh" type="button" style="font-size:13px;padding:9px 15px">🔄 새로고침</button>' +
+    bar = document.createElement('div');
+    bar.id = 'v106CloseBar';
+    bar.style.cssText = 'margin-top:12px;padding:12px 13px;border:2px solid #0B1B33;border-radius:14px;' +
+      'background:linear-gradient(180deg,#F7F9FF,#FFFFFF)';
+    bar.innerHTML =
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">' +
+        '<b style="font-size:14px;color:#0B1B33">🔒 최종 발행종료 · 월 마감</b>' +
+        '<span id="v106CloseState" class="v106-lock open">확인 중…</span>' +
       '</div>' +
-      '<div id="v106HoldNote" style="margin-top:8px;font-size:11.8px;color:#8A4A08">아직 조회 전입니다.</div>' +
-      '<div id="v106HoldOut" style="margin-top:7px"></div>';
-    panel.parentNode.insertBefore(host, panel.nextSibling);
-    q('v106HoldSearch').onclick = function () { loadHold(this); };
-    q('v106HoldRefresh').onclick = function () { loadHold(this); };
-    var qi = q('v106HoldQ');
-    if (qi) qi.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') loadHold(q('v106HoldRefresh')); });
-    return host;
+      '<p class="hint" style="margin:0 0 9px">이 집계월의 세금계산서 발행을 <b>끝냈다</b>고 시스템에 확정하는 버튼입니다. ' +
+        '보류 대기 건이 남아 있으면 마감을 막고 알려줍니다. 마감하면 엑셀업로드양식을 한 번 더 확정 기록하고 <b>월마감</b> 시트에 이력을 남깁니다.</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' +
+        '<button class="btn btn-primary v106-btn-xl" type="button" id="v106CloseBtn">🔒 최종 발행종료 (월 마감)</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="v106UncloseBtn">🔓 마감 해제</button>' +
+        '<input class="v106-search" type="text" id="v106CloseMemo" placeholder="마감 메모 (선택)">' +
+      '</div>' +
+      '<div id="v106CloseOut" style="margin-top:9px"></div>';
+    host.parentNode.insertBefore(bar, host.nextSibling);
+
+    var b = g('v106CloseBtn');
+    if (b) b.onclick = async function () {
+      var month = cm();
+      var ok = await ask('🔒 최종 발행종료 (월 마감)',
+        month + ' 세금계산서 발행을 최종 종료합니다.\n' +
+        '· 엑셀업로드양식(A7:BG140)을 최종 확정 기록합니다.\n' +
+        '· 마감일시/최종건수/박스/금액/차액을 [월마감] 시트에 남깁니다.\n' +
+        '· 마감 후에도 [🔓 마감 해제]로 되돌릴 수 있습니다.\n\n진행할까요?', '마감');
+      if (!ok) return;
+      busyS(b, true, '마감 처리 중…');
+      try {
+        var d = await window.api('month_close_v106', {
+          month: month, memo: (g('v106CloseMemo') ? g('v106CloseMemo').value : '')
+        });
+        logS(d.summary, 'ok'); toastS(d.summary, 'ok');
+        var out = g('v106CloseOut');
+        if (out) {
+          out.innerHTML = '<div class="note ' + (d.pass ? 'ok' : 'warn') + '"><b>' + esc(d.summary) + '</b>' +
+            (d.checkLine ? '<br><span style="white-space:pre-wrap;font-size:11.8px">' + esc(d.checkLine) + '</span>' : '') + '</div>';
+        }
+        await refreshAll106(null, null);
+        loadCloseState();
+      } catch (e) {
+        var out2 = g('v106CloseOut');
+        var blocked = String(e.message || '').indexOf('마감 불가') >= 0;
+        if (out2) {
+          out2.innerHTML = '<div class="note err"><b>' + (blocked ? '⏸ 마감할 수 없습니다' : '마감 실패') + '</b>' +
+            '<div style="white-space:pre-wrap;font-size:11.9px;margin-top:5px">' + esc(e.message) + '</div>' +
+            (blocked ? '<div style="margin-top:6px;font-size:11.7px">→ E 세션의 <b>⏸→✅ 보류 통합 관리</b>에서 [보류 → 귀속월 발행 처리]를 먼저 끝내세요.</div>' : '') +
+            '</div>';
+        }
+        toastS(e.message, 'err');
+      }
+      busyS(b, false, '🔒 최종 발행종료 (월 마감)');
+    };
+
+    var ub = g('v106UncloseBtn');
+    if (ub) ub.onclick = async function () {
+      var month = cm();
+      var ok = await ask('🔓 마감 해제', month + ' 의 마감을 해제합니다. 다시 수정할 수 있습니다.\n(마감 이력은 지워지지 않고 한 줄 더 쌓입니다.)', '해제');
+      if (!ok) return;
+      busyS(ub, true);
+      try {
+        var d = await window.api('month_close_cancel_v106', { month: month });
+        logS(d.summary, 'ok'); toastS(d.summary, 'ok');
+        await refreshAll106(null, null);
+        loadCloseState();
+      } catch (e) { toastS(e.message, 'err'); logS(e.message, 'err'); }
+      busyS(ub, false, '🔓 마감 해제');
+    };
   }
 
-  function paintHold(d, kw) {
-    var out = q('v106HoldOut');
-    var note = q('v106HoldNote');
-    var rows = (d && d.rows) || [];
-    HROWS = rows;
-    if (kw) {
-      var k = String(kw).replace(/\s+/g, '').toLowerCase();
-      rows = rows.filter(function (r) {
-        var n = String(r.clientName || '').replace(/\s+/g, '').toLowerCase();
-        var b = String(r.regNo || '').replace(/[^0-9]/g, '');
-        return n.indexOf(k) >= 0 || (b && k.replace(/[^0-9]/g, '') && b.indexOf(k.replace(/[^0-9]/g, '')) >= 0);
-      });
+  async function loadCloseState() {
+    var el = g('v106CloseState');
+    if (!el) return;
+    try {
+      var d = await window.api('month_close_status_v106', { month: cm() });
+      el.className = 'v106-lock ' + (d.closed ? 'closed' : 'open');
+      el.textContent = d.summary || (d.closed ? '🔒 마감됨' : '🔓 진행중');
+    } catch (e) {
+      el.className = 'v106-lock open';
+      el.textContent = '상태 확인 실패';
     }
-    if (note) {
-      note.innerHTML = '<b>' + esc((d && d.summary) || '') + '</b>' +
-        (kw ? ' · 검색어 “' + esc(kw) + '” → ' + nm(rows.length) + '건' : '') +
-        ' · 기준시각 <b>' + esc((d && d.checkedAt) || '-') + '</b>' +
-        ((d && d.diag && d.diag.length) ? '<br>' + d.diag.map(function (x) { return '· ' + esc(x); }).join('<br>') : '');
+  }
+
+  /* ##########################################################################
+   * [요청3] ⏸→✅ 보류 통합 관리 — 새로고침 / 검색 / 보류 건 확인
+   * ######################################################################## */
+  function holdTools() {
+    var sel = g('h81Sel');
+    if (!sel) return;
+    var host = g('h81Toolbar');
+    if (host) return;
+
+    host = document.createElement('div');
+    host.id = 'h81Toolbar';
+    host.className = 'v106-bar';
+    host.style.marginTop = '8px';
+    host.innerHTML =
+      '<button class="btn btn-ghost btn-sm" type="button" id="h81Refresh">🔄 새로고침</button>' +
+      '<input class="v106-search" type="text" id="h81Search" placeholder="🔍 보류 검색 (거래처명 · 월)">' +
+      '<button class="btn btn-ghost btn-sm" type="button" id="h81Verify">🧪 보류 건 확인</button>' +
+      '<span class="hint" id="h81Count">보류 대기 조회 전</span>';
+    var anchor = g('h81Load') ? g('h81Load').parentNode : sel.parentNode;
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(host, anchor.nextSibling);
+
+    var rf = g('h81Refresh');
+    if (rf) rf.onclick = async function () {
+      busyS(rf, true);
+      try {
+        if (window.loadHoldV81) await window.loadHoldV81();
+        logS('보류 대기 목록 새로고침 완료', 'ok');
+        toastS('보류 대기 목록을 지금 시점으로 다시 읽었습니다.', 'ok');
+      } catch (e) { logS(e.message, 'err'); }
+      busyS(rf, false, '🔄 새로고침');
+    };
+
+    var sb = g('h81Search');
+    if (sb) {
+      var apply = function () {
+        var kw = String(sb.value || '').trim().toLowerCase();
+        var shown = 0;
+        qa('option', sel).forEach(function (o, i) {
+          if (i === 0) return;
+          var hit = !kw || String(o.textContent || '').toLowerCase().indexOf(kw) >= 0;
+          o.style.display = hit ? '' : 'none';
+          if (hit) shown++;
+        });
+        var c = g('h81Count');
+        if (c) c.textContent = kw ? ('검색 결과 ' + shown + '건') : '';
+      };
+      sb.addEventListener('input', apply);
+      sb.addEventListener('change', apply);
     }
+
+    var vb = g('h81Verify');
+    if (vb) vb.onclick = async function () {
+      var opt = sel.options[sel.selectedIndex];
+      if (!sel.value || !opt) { toastS('먼저 보류 건을 선택하세요.', 'err'); return; }
+      var txt = String(opt.textContent || '');
+      var m = txt.match(/(\d{4}-\d{2})/);
+      busyS(vb, true);
+      try {
+        var d = await window.api('hold_fix_v105', {
+          originMonth: m ? m[1] : cm(), clientName: '', holdId: sel.value
+        });
+        logS(d.summary + ' — 서버에 실제로 존재하는 보류 건입니다.', 'ok');
+        toastS(d.summary, 'ok');
+      } catch (e) { logS(e.message, 'err'); toastS(e.message, 'err'); }
+      busyS(vb, false, '🧪 보류 건 확인');
+    };
+  }
+
+  /* ##########################################################################
+   * [요청4] 📅 월별 최종 예외 등록 리스트 (리포트)
+   * ######################################################################## */
+  function repBox() {
+    var host = g('v105Rep');
+    if (!host || !host.parentNode) host = byStep('R') ? (byStep('R').querySelector('.step-bd') || byStep('R')) : null;
+    if (!host) return;
+    if (g('v106Rep')) return;
+
+    var box = document.createElement('div');
+    box.id = 'v106Rep';
+    box.className = 'v106-card';
+    box.innerHTML =
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">' +
+        '<b style="font-size:13.8px">📅 월별(집계월) 최종 예외 등록 리스트</b>' +
+        '<span class="v106-chip" style="background:#EEF4FF;border-color:#BFD3FF;color:#1D4ED8">v10.6 신규 · 취소 제외 · 마감여부 표시</span>' +
+      '</div>' +
+      '<div class="v106-bar">' +
+        '<label style="font-size:12px;font-weight:900;color:#334155">집계월</label>' +
+        '<input id="v106RepMonth" type="month" value="' + esc(cm()) + '" style="padding:7px 9px;border:1px solid #CBD5E1;border-radius:9px">' +
+        '<button class="btn btn-primary btn-sm" type="button" id="v106RepGo">조회</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="v106RepAll">전체 월</button>' +
+        '<button class="btn btn-ghost btn-sm" type="button" id="v106RepPrint">인쇄</button>' +
+      '</div>' +
+      '<div id="v106RepOut" style="margin-top:9px"></div>';
+    host.parentNode.insertBefore(box, host.nextSibling);
+
+    var go = g('v106RepGo'); if (go) go.onclick = function () { loadRep106(null); };
+    var all = g('v106RepAll'); if (all) all.onclick = function () { loadRep106('ALL'); };
+    var pr = g('v106RepPrint'); if (pr) pr.onclick = function () { try { window.print(); } catch (e) {} };
+    loadRep106(null);
+  }
+
+  var R106 = null;
+
+  async function loadRep106(mode) {
+    var out = g('v106RepOut');
+    var btn = g('v106RepGo');
     if (!out) return;
-    if (!rows.length) {
-      out.innerHTML = '<div class="note warn" style="margin:0">보류 대기 건이 없습니다.' +
-        (kw ? ' (검색어를 지우고 [🔄 새로고침]을 눌러 보세요)' : '') + '</div>';
+    out.innerHTML = '<div class="note info">불러오는 중…</div>';
+    if (btn) { btn.disabled = true; btn.textContent = '조회 중…'; }
+    try {
+      var mv = g('v106RepMonth') ? g('v106RepMonth').value : '';
+      var ex = (mode === 'ALL')
+        ? { from: '', to: '' }
+        : { from: mv || '', to: mv || '' };
+      var d = await window.api('exception_report_v106', ex);
+      R106 = d;
+      renderRep106();
+    } catch (e) {
+      out.innerHTML = '<div class="note err">조회 실패 — ' + esc(e.message) + '</div>';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '조회'; }
+  }
+
+  function renderRep106() {
+    var out = g('v106RepOut');
+    if (!out || !R106) return;
+    var d = R106, t = d.totals || {};
+    var rows = d.rows || [];
+    var mv = g('v106RepMonth') ? g('v106RepMonth').value : '';
+    var list = mv ? rows.filter(function (r) { return r.month === mv; }) : rows;
+
+    var h = '<div class="kpis">' +
+      '<div class="kpi info"><div class="t">대상 월</div><div class="v">' + esc(mv || '전체 기간') + '</div></div>' +
+      '<div class="kpi"><div class="t">최종 예외</div><div class="v">' + fn(list.length) + '<span class="u">건</span></div>' +
+        '<div class="hint" style="margin:2px 0 0">취소 ' + fn(d.cancelledCount || 0) + '건 제외</div></div>' +
+      '<div class="kpi"><div class="t">거래처</div><div class="v">' +
+        fn(Object.keys(list.reduce(function (a, r) { a[r.clientName] = 1; return a; }, {})).length) + '<span class="u">곳</span></div></div>' +
+      '<div class="kpi ok"><div class="t">실제 발행금액</div><div class="v">' +
+        fw(list.reduce(function (s, r) { return s + n0(r.amount); }, 0)) + '</div></div>' +
+      '<div class="kpi warn"><div class="t">최초 대비 차액</div><div class="v">' +
+        fw(list.reduce(function (s, r) { return s + n0(r.diffAmount); }, 0)) + '</div></div>' +
+      '</div>';
+
+    if (!list.length) {
+      h += '<div class="note warn" style="margin-top:8px">' + esc(mv || '해당 기간') +
+        ' 에 최종 등록된 예외가 없습니다. (취소된 건은 표시하지 않습니다.)</div>';
+      out.innerHTML = h;
       return;
     }
-    out.innerHTML = '<div class="tblwrap"><table><thead><tr>' +
-      '<th>귀속월</th><th>거래처</th><th>사업자번호</th><th class="num">최초 출고건</th>' +
-      '<th class="num">최초 박스</th><th class="num">최초 금액</th><th>사유</th><th>상태</th><th>처리</th>' +
+
+    var totQ = 0, totA = 0, totD = 0;
+    list.forEach(function (r) { totQ += n0(r.qty); totA += n0(r.amount); totD += n0(r.diffAmount); });
+    var closed = (d.months || []).filter(function (m) { return m.month === mv; })[0];
+
+    h += '<div class="v106-tbl" style="margin-top:9px"><table><thead><tr>' +
+      '<th>No.</th><th>집계월</th><th>유형</th><th>거래처</th><th>사업자번호</th><th>상태</th>' +
+      '<th class="num">발행박스</th><th class="num">발행금액</th><th class="num">최초 대비 차액</th>' +
+      '<th class="num">납품건</th><th>사유</th><th>등록일시</th><th>관리</th>' +
       '</tr></thead><tbody>' +
-      rows.map(function (r, i) {
+      list.map(function (r, i) {
         return '<tr>' +
-          '<td><b>' + esc(r.originMonth) + '</b></td>' +
+          '<td class="num">' + (i + 1) + '</td>' +
+          '<td><b>' + esc(r.month) + '</b>' + (r.originMonth && r.originMonth !== r.month ? '<br><span style="font-size:10.7px;color:#64748B">귀속 ' + esc(r.originMonth) + '</span>' : '') + '</td>' +
+          '<td>' + esc(r.typeLabel) + '</td>' +
           '<td>' + esc(r.clientName) + '</td>' +
-          '<td>' + (r.regNo ? esc(r.regNo) : '<span class="badge b-warn">없음</span>') + '</td>' +
-          '<td class="num">' + (r.snapPages === null ? '-' : nm(r.snapPages)) + '</td>' +
-          '<td class="num">' + (r.snapQty === null ? '-' : nm(r.snapQty)) + '</td>' +
-          '<td class="num">' + (r.snapAmount === null ? '-' : wn(r.snapAmount)) + '</td>' +
-          '<td style="font-size:11.4px;color:#334155">' + esc(r.reason || '-') + '</td>' +
-          '<td>' + (r.overdue ? '<span class="badge b-warn">지난달 · 기한 임박</span>'
-                            : '<span class="badge b-neutral">당월</span>') + '</td>' +
-          '<td><button class="btn btn-primary btn-sm" type="button" data-v106hold="' + i + '">발행 처리</button></td>' +
+          '<td>' + (r.regNo ? esc(r.regNo) : '<span class="v106-chip" style="background:#FFF7E8;border-color:#F2CF8B;color:#B45309">없음</span>') + '</td>' +
+          '<td>' + (String(r.status) === '해소' ? '<span class="v106-chip" style="background:#E9F7EF;border-color:#A7E0BF;color:#0F7A3D">해소</span>' : '활성') + '</td>' +
+          '<td class="num">' + fn(r.qty) + '</td>' +
+          '<td class="num">' + fw(r.amount) + '</td>' +
+          '<td class="num">' + (n0(r.diffAmount) === 0 ? '-' : fw(r.diffAmount)) + '</td>' +
+          '<td class="num">' + fn(r.pageCount) + '</td>' +
+          '<td style="max-width:230px;color:#475569">' + esc(String(r.reason || '').slice(0, 120)) + '</td>' +
+          '<td style="white-space:nowrap;color:#64748B">' + esc(String(r.registeredAt || '').slice(0, 16)) + '</td>' +
+          '<td><button class="btn btn-danger btn-sm" type="button" data-v106del="' + esc(r.id) + '">취소</button></td>' +
           '</tr>';
-      }).join('') + '</tbody></table></div>' +
-      '<p class="hint" style="margin:5px 0 0">최초 스냅샷(출고건/박스/금액)은 보류를 건 달 그대로 보존됩니다. ' +
-      '실제 발행 수량·금액만 입력하면 <b>귀속월(원월)은 바뀌지 않고</b> 그 달 발행으로 확정됩니다.</p>';
-    Array.prototype.forEach.call(out.querySelectorAll('button[data-v106hold]'), function (b) {
-      b.onclick = function () {
-        var r = rows[Number(b.getAttribute('data-v106hold'))];
-        if (r) issueHold(r, b);
+      }).join('') +
+      '<tr style="background:#F8FAFC;font-weight:900">' +
+      '<td colspan="6">합계</td><td class="num">' + fn(totQ) + '</td><td class="num">' + fw(totA) + '</td>' +
+      '<td class="num">' + (totD === 0 ? '-' : fw(totD)) + '</td><td class="num">-</td><td colspan="3"></td></tr>' +
+      '</tbody></table></div>' +
+      '<p class="hint">' +
+        (closed ? (closed.closed ? '🔒 이 달은 <b>마감 완료</b> 상태입니다.' : '🔓 이 달은 <b>진행중</b>입니다.') : '') +
+        ' · 취소한 예외는 목록·건수·합계에서 모두 빠지고, 3단계 계산도 즉시 원래 값으로 돌아갑니다.</p>';
+
+    out.innerHTML = h;
+
+    qa('button[data-v106del]', out).forEach(function (b) {
+      b.onclick = async function () {
+        var id = b.getAttribute('data-v106del');
+        var ok = await ask('예외 취소', '이 예외를 취소할까요?\n리포트·E 리스트·3단계에서 즉시 빠집니다.', '취소');
+        if (!ok) return;
+        busyS(b, true);
+        try {
+          await window.api('exceptions_delete', { exceptId: id, month: cm() });
+          logS('예외 취소 ' + id, 'ok');
+          await loadRep106(mv ? null : 'ALL');
+          if (window.loadExceptions) await window.loadExceptions(true);
+        } catch (e) { toastS(e.message, 'err'); }
+        busyS(b, false, '취소');
       };
     });
   }
 
-  async function loadHold(btn) {
-    holdBox();
-    btnWait(btn, true, btn && btn.id === 'v106HoldSearch' ? '🔍 보류 건 검색' : '🔄 새로고침');
-    try {
-      var d = await apiV106('hold_list_v106', { month: curM() });
-      var kw = q('v106HoldQ') ? q('v106HoldQ').value.trim() : '';
-      paintHold(d, kw);
-      say('⏸ 보류 대기 조회 — ' + ((d && d.summary) || ''), 'ok');
-    } catch (e) {
-      var o = q('v106HoldOut');
-      if (o) o.innerHTML = '<div class="note err">보류 목록 조회 실패 — ' + esc(e.message) + '</div>';
-      toast(e.message, 'err');
-    }
-    btnWait(btn, false, btn && btn.id === 'v106HoldSearch' ? '🔍 보류 건 검색' : '🔄 새로고침');
+  /* ##########################################################################
+   * [요청5] 3단계 — "보류→귀속월 발행 처리 차액" 항 표시
+   * ######################################################################## */
+  if (typeof window.renderStage3 === 'function' && !window.__v106S3Wrap) {
+    var _r3 = window.renderStage3;
+    window.renderStage3 = function (d) {
+      _r3(d);
+      try {
+        var host = g('s3Out');
+        if (!host || !d) return;
+        var old = g('v106HoldDiff'); if (old) old.remove();
+        var hd = d.holdDiff || {};
+        var q = n0(hd.qty), a = n0(hd.amount);
+        var rec = d.recon2 || {};
+        var pass = !!rec.pass;
+        var box = document.createElement('div');
+        box.id = 'v106HoldDiff';
+        box.className = 'note ' + (pass ? 'ok' : 'warn');
+        box.style.marginTop = '8px';
+        box.innerHTML =
+          '<b>수량/금액 조정 내역 — 보류→귀속월 발행 처리 차액</b>' +
+          '<div style="margin-top:4px;font-size:12.2px;line-height:1.8">' +
+            '· 보류 → 귀속월 발행 처리에 따른 차액(수량) : <b>' + fn(q) + '박스</b><br>' +
+            '· 보류 → 귀속월 발행 처리에 따른 차액(금액) : <b>' + fw(a) + '</b><br>' +
+            '<span style="color:#475569">→ 이 두 값은 "설명되지 않은 차액"이 아니라 <b>정상 처리된 값</b>입니다. ' +
+            '누락검증·정량적 더블체크의 합계에 조정 항으로 포함됩니다. ' +
+            (pass ? '그래서 지금 판정은 <b>= 같음 / 정상</b>입니다.' : '현재도 ≠ 이면 실제 계산이 어긋난 것이니 아래 표의 차이를 확인하세요.') +
+            '</span>' +
+          '</div>';
+        host.appendChild(box);
+      } catch (e) {}
+    };
+    window.__v106S3Wrap = true;
   }
 
-  async function issueHold(r, btn) {
-    var qty = window.prompt('실제 발행수량(박스)\n최초 스냅샷: ' +
-      (r.snapQty === null ? '-' : nm(r.snapQty)) + '박스', r.snapQty === null ? '' : r.snapQty);
-    if (qty === null) return;
-    var amt = window.prompt('실제 발행금액(총액, 원)\n최초 스냅샷: ' +
-      (r.snapAmount === null ? '-' : wn(r.snapAmount)), r.snapAmount === null ? '' : r.snapAmount);
-    if (amt === null) return;
-    if (!String(amt).replace(/[^0-9]/g, '')) { toast('발행금액을 입력하세요.', 'err'); return; }
-    if (!window.confirm('보류 → ' + r.originMonth + ' 귀속월 발행 처리\n\n거래처: ' + r.clientName +
-      '\n실제 발행: ' + nm(qty) + '박스 / ' + wn(amt) +
-      '\n최초 스냅샷: ' + (r.snapQty === null ? '-' : nm(r.snapQty)) + '박스 / ' +
-      (r.snapAmount === null ? '-' : wn(r.snapAmount)) +
-      '\n\n진행할까요?')) return;
-    btnWait(btn, true, '처리 중…');
-    try {
-      var d = await apiV106('hold_issue_v81', {
-        holdId: r.id, originMonth: r.originMonth, clientName: r.clientName,
-        qty: Number(qty), amount: Number(String(amt).replace(/[^0-9]/g, '')),
-        reason: '보류 → 귀속월 발행 처리'
-      });
-      toast((d && d.summary) || '보류 발행 처리 완료', 'ok');
-      say((d && d.summary) || '보류 발행 처리 완료', 'ok');
-      await loadHold(q('v106HoldRefresh'));
-      try { await liveExc(true); } catch (e) {}
-      if (typeof window.loadExceptions === 'function') { try { await window.loadExceptions(true); } catch (e) {} }
-    } catch (e) { toast(e.message, 'err'); say(e.message, 'err'); }
-    btnWait(btn, false, '발행 처리');
+  /* ④ 예외 리스트 보기 — 항상 '지금 시점'으로 다시 읽고 열기 (stale 방지) */
+  function hookExModal() {
+    var b = g('btnV10ExList');
+    if (!b || b.getAttribute('data-v106') === '1') return;
+    b.setAttribute('data-v106', '1');
+    b.onclick = async function () {
+      busyS(b, true);
+      try {
+        var d = await window.api('stage3_final', { month: cm(), execute: false });
+        if (window.STATE) STATE.s3 = d;
+        if (window.renderStage3) { try { window.renderStage3(d); } catch (e) {} }
+        var ov = g('v10Modal');
+        var ttl = g('v10ModalTitle'), bd = g('v10ModalBody');
+        if (!ov || !ttl || !bd) { logS('예외 리스트 모달을 찾지 못했습니다.', 'warn'); return; }
+        var tt = d.totals || {};
+        function mini(cols, rows, empty) {
+          var h = '<div class="v106-tbl"><table><thead><tr>' +
+            cols.map(function (c) { return '<th class="' + (c.num ? 'num' : '') + '">' + esc(c.t) + '</th>'; }).join('') +
+            '</tr></thead><tbody>' + (rows.length
+              ? rows.map(function (r) { return '<tr>' + cols.map(function (c) { return '<td class="' + (c.num ? 'num' : '') + '">' + (r[c.k] === undefined ? '-' : r[c.k]) + '</td>'; }).join('') + '</tr>'; }).join('')
+              : '<tr><td colspan="' + cols.length + '" style="text-align:center;color:#64748B;padding:14px">' + esc(empty) + '</td></tr>') +
+            '</tbody></table></div>';
+          return h;
+        }
+        var h = '<div class="kpis">' +
+          '<div class="kpi warn"><div class="t">보류(대기)</div><div class="v">' + fn((d.deferred || []).length) + '곳</div><div class="hint" style="margin:2px 0 0">' + fw(tt.deferredAmount) + '</div></div>' +
+          '<div class="kpi"><div class="t">제외</div><div class="v">' + fn((d.excluded || []).length) + '곳</div><div class="hint" style="margin:2px 0 0">' + fw(tt.excludedAmount) + '</div></div>' +
+          '<div class="kpi"><div class="t">기발행완료</div><div class="v">' + fn((d.already || []).length) + '곳</div><div class="hint" style="margin:2px 0 0">' + fw(tt.alreadyAmount) + '</div></div>' +
+          '<div class="kpi warn"><div class="t">사업자번호없음</div><div class="v">' + fn((d.noBizNo || []).length) + '건</div><div class="hint" style="margin:2px 0 0">' + fw(tt.noBizAmount) + '</div></div>' +
+          '</div>';
+        h += '<h4 style="margin:12px 0 6px;font-size:12.5px">보류(대기) 상세</h4>' + mini(
+          [{ t: '거래처', k: 'c' }, { t: '박스', k: 'q', num: 1 }, { t: '금액', k: 'a', num: 1 }, { t: '사유', k: 'r' }],
+          (d.deferred || []).map(function (x) { return { c: esc(x.clientName), q: fn(x.qty), a: fw(x.amount), r: esc(x.reason || '-') }; }),
+          '보류 대기 거래처가 없습니다.');
+        h += '<h4 style="margin:12px 0 6px;font-size:12.5px">제외 상세</h4>' + mini(
+          [{ t: '거래처', k: 'c' }, { t: '박스', k: 'q', num: 1 }, { t: '금액', k: 'a', num: 1 }, { t: '사유', k: 'r' }],
+          (d.excluded || []).map(function (x) { return { c: esc(x.clientName), q: fn(x.qty), a: fw(x.amount), r: esc(x.reason || '-') }; }),
+          '제외된 거래처가 없습니다.');
+        h += '<h4 style="margin:12px 0 6px;font-size:12.5px">기발행완료 상세</h4>' + mini(
+          [{ t: '거래처', k: 'c' }, { t: '박스', k: 'q', num: 1 }, { t: '금액', k: 'a', num: 1 }],
+          (d.already || []).map(function (x) { return { c: esc(x.clientName), q: fn(x.qty), a: fw(x.amount) }; }),
+          '기발행완료 처리된 건이 없습니다.');
+        h += '<h4 style="margin:12px 0 6px;font-size:12.5px">사업자번호없음 상세</h4>' + mini(
+          [{ t: '거래처', k: 'c' }, { t: '박스', k: 'q', num: 1 }, { t: '금액', k: 'a', num: 1 }],
+          (d.noBizNo || []).map(function (x) { return { c: esc(x.client), q: fn(x.qty), a: fw(x.amount) }; }),
+          '사업자번호 없음 건이 없습니다.');
+        if (d.holdDiff && (n0(d.holdDiff.qty) || n0(d.holdDiff.amount))) {
+          h += '<div class="note info" style="margin-top:10px"><b>보류→귀속월 발행 처리 차액</b><br>' +
+            '수량 ' + fn(d.holdDiff.qty) + '박스 · 금액 ' + fw(d.holdDiff.amount) +
+            '<br><span style="color:#475569">이 값은 정상 처리분이며 누락검증 합계의 조정 항에 포함됩니다.</span></div>';
+        }
+        if (d.checkLine) {
+          h += '<div class="note ' + (String(d.checkLine).indexOf('==') >= 0 ? 'ok' : 'warn') + '" style="margin-top:10px">' +
+            '<b>정량적 더블체크</b><br><span style="white-space:pre-wrap">' + esc(d.checkLine) + '</span></div>';
+        }
+        ttl.textContent = '④ 예외 리스트 · ' + cm() + ' (실시간)';
+        bd.innerHTML = h;
+        ov.classList.add('on');
+        logS('④ 예외 리스트 — 지금 시점으로 새로 읽어 열었습니다.', 'ok');
+      } catch (e) { logS(e.message, 'err'); toastS(e.message, 'err'); }
+      busyS(b, false, '④ 예외 리스트 보기');
+    };
   }
 
-  /* ==============================================================
-   * [요청 4] 🗂 예외 리스트 리포트 — 취소 제외 안내 + 월별 마감 현황
-   * ============================================================== */
-  function addRepNote() {
-    var box = q('v105Rep');
-    if (!box || q('v106RepNote')) return;
-    var d = document.createElement('div');
-    d.id = 'v106RepNote';
-    d.style.cssText = 'margin-top:9px;padding:8px 10px;border-radius:10px;background:#F6FDF9;' +
-      'border:1px dashed #A7E0BF;font-size:11.8px;color:#0F7A3D';
-    d.innerHTML = '<b>✅ v10.6 리포트 규칙</b> — 상태가 <b>“취소”인 예외는 이 리포트에서 완전히 빠집니다</b>' +
-      '(건수·금액·차액 모두). 빠진 건수는 요약 줄에 숫자로 표시되어 몰래 숨기지 않습니다. ' +
-      '<button class="btn btn-ghost btn-sm" id="v106CloseList" type="button" style="margin-left:6px">📅 월 마감 현황</button>' +
-      '<div id="v106CloseListOut" style="margin-top:7px"></div>';
-    box.appendChild(d);
-    var b = q('v106CloseList');
-    if (b) b.onclick = loadCloseList;
-  }
-
-  async function loadCloseList() {
-    var out = q('v106CloseListOut');
-    var btn = q('v106CloseList');
-    if (!out) return;
-    btnWait(btn, true, '📅 월 마감 현황');
-    out.innerHTML = '<div class="note info" style="margin:0">불러오는 중…</div>';
-    try {
-      var d = await apiV106('month_close_list_v106', {
-        from: q('v105RFrom') ? q('v105RFrom').value : '',
-        to: q('v105RTo') ? q('v105RTo').value : ''
-      });
-      var rows = d.rows || [];
-      if (!rows.length) {
-        out.innerHTML = '<div class="note warn" style="margin:0">아직 마감된 달이 없습니다 — [3 최종 확정]의 [🔒 최종 발행종료]로 마감하세요.</div>';
-      } else {
-        out.innerHTML = '<div class="tblwrap"><table><thead><tr>' +
-          '<th>집계월</th><th>마감시각</th><th>상태</th><th class="num">최종행</th>' +
-          '<th class="num">최종금액</th><th class="num">발행률</th><th class="num">차액(금액)</th>' +
-          '<th class="num">보류</th></tr></thead><tbody>' +
-          rows.map(function (m) {
-            return '<tr><td><b>' + esc(m.month) + '</b></td><td>' + esc(m.at) + '</td>' +
-              '<td>' + (String(m.status).indexOf('완료') >= 0 ? '<span class="badge b-ok">' + esc(m.status) + '</span>'
-                                                            : '<span class="badge b-warn">' + esc(m.status) + '</span>') + '</td>' +
-              '<td class="num">' + nm(m.rows) + '</td><td class="num">' + wn(m.finalAmount) + '</td>' +
-              '<td class="num">' + nm(m.rate) + '%</td><td class="num">' + wn(m.diffAmount) + '</td>' +
-              '<td class="num">' + nm(m.holds) + '</td></tr>';
-          }).join('') + '</tbody></table></div>' +
-          '<p class="hint" style="margin:5px 0 0">' + esc(d.summary) + '</p>';
-      }
-    } catch (e) {
-      out.innerHTML = '<div class="note err" style="margin:0">마감 현황 조회 실패 — ' + esc(e.message) + '</div>';
-    }
-    btnWait(btn, false, '📅 월 마감 현황');
-  }
-
-  /* ==============================================================
-   * api 래퍼 — 쓰기 동작 뒤 자동 새로고침 (요청 1·3의 핵심)
-   * ============================================================== */
-  window.api = async function (action, extra) {
-    /* 보류 목록은 v10.6 창구로 통일 (모양 동일 + 진단) */
-    if (action === 'hold_list_v81') action = 'hold_list_v106';
-    var d = await API(action, extra);
-    try {
-      var wrote = false;
-      if (action === 'hold_issue_v81' || action === 'hold_resolve') wrote = true;
-      if (action === 'stage3_final' && extra && extra.execute === true) wrote = true;
-      if (action === 'exceptions_reapply') wrote = true;
-      if (action === 'month_close_v106' && extra && extra.execute === true) wrote = true;
-      if (wrote) {
-        setTimeout(async function () {
-          try { await liveExc(true); } catch (e) {}
-          if (q('v106HoldBox')) { try { await loadHold(q('v106HoldRefresh')); } catch (e) {} }
-          try { if (typeof window.loadExceptions === 'function') await window.loadExceptions(true); } catch (e) {}
-        }, 700);
-      }
-    } catch (e) {}
-    return d;
-  };
-
-  /* ==============================================================
-   * 부팅 — 요소가 나타날 때마다(추가 방식) 필요한 것만 붙입니다
-   * ============================================================== */
+  /* ##########################################################################
+   * 초기 실행 / 이벤트 연결
+   * ######################################################################## */
   function boot() {
-    try { addExcBar(); } catch (e) {}
-    try { restyleReapply(); } catch (e) {}
-    try { addCloseBtn(); } catch (e) {}
-    try { holdBox(); } catch (e) {}
-    try { addRepNote(); } catch (e) {}
-  }
-  function bootSeq() {
-    boot();
-    setTimeout(boot, 900);
-    setTimeout(boot, 2000);
-    setTimeout(boot, 3800);
-    setTimeout(boot, 6000);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootSeq);
-  else bootSeq();
-  try {
-    var mo = new MutationObserver(function () { boot(); });
-    mo.observe(document.body, { childList: true, subtree: true });
-  } catch (e) {}
-  /* 집계월이 바뀌면 실시간 목록도 다시 읽습니다 */
-  var mEl = q('month');
-  if (mEl) {
-    mEl.addEventListener('change', function () {
-      LIVE.at = '';
-      setTimeout(function () { liveExc(true); if (q('v106HoldBox')) loadHold(q('v106HoldRefresh')); }, 900);
+    try { closeBar(); } catch (e) {}
+    try { holdTools(); } catch (e) {}
+    try { repBox(); } catch (e) {}
+    try { exBar(); } catch (e) {}
+    try { bindUnitPreview(); } catch (e) {}
+    try { hookExModal(); } catch (e) {}
+    try { renderUnitPreview(); } catch (e) {}
+    try { loadCloseState(); } catch (e) {}
+    /* 예외 등록 계열 버튼 → 자동 새로고침 (실시간 반영) */
+    ['v10Save', 'btnExSave', 'btnRowSave', 'rw103Save'].forEach(function (id) {
+      var b = g(id);
+      if (!b || b.getAttribute('data-v106re')) return;
+      b.setAttribute('data-v106re', '1');
+      b.addEventListener('click', function () {
+        setTimeout(function () { refreshAll106(null, null); }, 1400);
+      });
     });
   }
-})();
+  boot();
+  [300, 900, 1800, 3000, 5000].forEach(function (ms) { setTimeout(boot, ms); });
 
+  var mEl = g('month');
+  if (mEl) mEl.addEventListener('change', function () {
+    UP = {};
+    setTimeout(function () { loadCloseState(); repBox(); renderUnitPreview(); }, 400);
+  });
+
+  try {
+    var moBody = new MutationObserver(function () {
+      try { closeBar(); holdTools(); repBox(); hookExModal(); } catch (e) {}
+    });
+    moBody.observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
+})();
 </script>
+
 </body>
 </html>
