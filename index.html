@@ -583,7 +583,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwEF08-53pzOz4QuZqUxEXwkGZxLJtxAZ18TWxfVBwtdX9N2DCxDIig0gM4-bohsKVr/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzqHvsGFqJoIwGXOFXHsXKIwEakQHAFs-7qkoJdfAy0PnqNprdrZS9DIAglRLOFBOqC/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3220,6 +3220,7 @@ loadExceptions(true);
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html><script>
 /* =====================================================================
@@ -5701,6 +5702,491 @@ loadExceptions(true);
       try { closeBar(); holdTools(); repBox(); hookExModal(); } catch (e) {}
     });
     moBody.observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
+})();
+</script>
+
+<script>
+/* ============================================================================
+ * ██  [v10.7] UI ADD-ON — 「세금계산서 거래처 Last Dance One More」
+ * ----------------------------------------------------------------------------
+ *  · 기존 화면/스크립트/함수는 한 줄도 삭제·수정하지 않았습니다(추가 전용).
+ *  · 서버(v10.7)가 계산한 값을 화면에 '정확히' 반영하는 역할만 합니다.
+ *
+ *  [요청1] 📋 등록 예외 리스트 실시간화
+ *          · 예외 등록 / 취소 / 보류해소 / 최종확정 / 새로고침 → 항상 '지금 시점' 재계산
+ *          · 계산 시각(서버 stamp) 표시
+ *          · [④ 예외 리스트 보기] 창에도 [🔄 새로고침] 추가
+ *  [요청2] 📌 [고정 예외 등록] → 그 달 실제 '거래처 전체 제외' 예외 생성
+ *  [요청3] 누락검증 표 — [수량/금액 조정] → [차액(수량/금액)] 명칭·부호 정리
+ *          + [차이] 열(합계 − ②DB) 추가, 4개 검증 영역에 동일 규칙 적용
+ *  [추가]   [🔄 재반영] 버튼 — '보류→귀속월 발행 처리'와 같은 색·큰 글씨
+ * ========================================================================== */
+(function () {
+  'use strict';
+  if (window.__v107Loaded) return;
+  window.__v107Loaded = true;
+
+  /* ---------------- 공통 ---------------- */
+  function g(id) { return document.getElementById(id); }
+  function q(sel, root) { return (root || document).querySelector(sel); }
+  function qa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function n0(v) { return (v === null || v === undefined || v === '') ? 0 : Number(v); }
+  function fn(v) {
+    if (v === null || v === undefined || v === '') return '-';
+    return (Math.round(Number(v) * 100) / 100).toLocaleString('ko-KR');
+  }
+  function fw(v) {
+    if (v === null || v === undefined || v === '') return '-';
+    return (Math.round(Number(v) || 0)).toLocaleString('ko-KR') + '원';
+  }
+  function cm() { var m = g('month'); return m ? m.value : ''; }
+  function logS(m, k) { try { log(m, k); } catch (e) {} }
+  function toastS(m, k) { try { toast(m, k); } catch (e) {} }
+  function busyS(b, on, label) { try { busy(b, on, label); } catch (e) {} }
+  function ask(t, b, y) { try { return confirmBox(t, b, y); } catch (e) { return Promise.resolve(false); } }
+  function stepSec(no) {
+    var hit = null;
+    qa('.step').forEach(function (sec) {
+      var el = sec.querySelector('.step-no');
+      if (el && String(el.textContent || '').trim() === no) hit = sec;
+    });
+    return hit;
+  }
+
+  /* ---------------- CSS ---------------- */
+  var CSS = document.createElement('style');
+  CSS.textContent =
+    '.v107-bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:0 0 9px;padding:8px 11px;' +
+      'background:linear-gradient(180deg,#F7FAFF,#EEF4FF);border:1px solid #BFD3FF;border-radius:11px}' +
+    '.v107-bar b{font-size:13.4px;letter-spacing:-.2px}' +
+    '.v107-stamp{font-size:11.2px;font-weight:900;border-radius:999px;padding:3px 10px;' +
+      'border:1px solid #A7E0BF;background:#E9F7EF;color:#0F7A3D;font-variant-numeric:tabular-nums}' +
+    '.v107-stamp.stale{border-color:#F2CF8B;background:#FFF7E8;color:#B45309}' +
+    '#v10Reapply{font-size:13.6px!important;font-weight:900!important;padding:10px 18px!important;' +
+      'border-radius:10px!important;background:#0B1B33!important;border:1px solid #0B1B33!important;' +
+      'color:#fff!important;letter-spacing:-.2px;box-shadow:0 3px 9px rgba(11,27,51,.22)}' +
+    '#v10Reapply:hover{background:#12294A!important}' +
+    '.v107-pill{display:inline-block;font-size:11.2px;font-weight:900;border-radius:999px;padding:2px 9px;' +
+      'border:1px solid #CBD5E1;background:#F8FAFC;color:#334155}' +
+    '.v107-th-diff{background:#FFF7E8!important;color:#B45309!important}';
+  document.head.appendChild(CSS);
+
+  /* ==========================================================================
+   * [요청1-a] 📋 등록 예외 리스트 — 실시간 바(계산 시각)
+   * ========================================================================= */
+  function exBar107() {
+    var host = g('exOut');
+    if (!host) return null;
+    var bar = g('v107ExBar');
+    if (bar && host.contains(bar)) { paintStamp107(); return bar; }
+
+    bar = document.createElement('div');
+    bar.id = 'v107ExBar';
+    bar.className = 'v107-bar';
+    bar.innerHTML =
+      '<b>📋 등록 예외 리스트 (고정거래처 즐겨찾기)</b>' +
+      '<span class="v107-stamp" id="v107Stamp">계산 시각 확인 중…</span>' +
+      '<span class="v107-pill">발행박스·발행금액·차액·발행률 = 3단계 시트 기록과 동일 계산</span>';
+    host.insertBefore(bar, host.firstChild);
+    paintStamp107();
+    return bar;
+  }
+
+  function paintStamp107() {
+    var s = g('v107Stamp');
+    if (!s) return;
+    var d = window.__v106Clients || window.__v107Clients;
+    if (d && d.stamp) {
+      s.textContent = (d.closed ? '🔒 마감됨 · ' : '⏱ 실시간 · ') + d.stamp;
+      s.className = 'v107-stamp' + (d.closed ? ' stale' : '');
+    } else {
+      s.textContent = '⏱ 실시간';
+    }
+  }
+
+  /* 서버를 실제로 다시 읽는 새로고침 (E 세션 원본 [새로고침] 경로를 그대로 사용) */
+  async function refreshLive107(btn, label) {
+    if (btn) busyS(btn, true);
+    try {
+      var sec = stepSec('E');
+      var orig = sec ? sec.querySelector('.v10-refresh') : null;
+      if (orig) { try { orig.click(); } catch (e) {} }
+      else if (window.loadExceptions) { try { await window.loadExceptions(true); } catch (e) {} }
+
+      if (window.loadHoldV81) { try { await window.loadHoldV81(); } catch (e) {} }
+      var s3 = g('btnS3Prev');
+      if (s3) { try { s3.click(); } catch (e) {} }
+
+      logS('실시간 새로고침 완료 — 거래처·예외·고정거래처·보류·3단계를 지금 시점으로 다시 계산했습니다.', 'ok');
+      toastS('새로고침 완료 — 리스트 숫자를 지금 시점으로 다시 계산했습니다.', 'ok');
+    } catch (e) {
+      logS(e.message, 'err');
+      toastS(e.message, 'err');
+    }
+    if (btn) busyS(btn, false, label || '🔄 새로고침');
+    setTimeout(function () { try { decorate107(); } catch (e) {} }, 260);
+  }
+
+  /* 서버 작업(최종확정·보류해소 등)이 '끝난 뒤'에 새로고침 — 실행 중 경합 방지 */
+  function refreshAfterIdle107(btnId, maxWaitMs) {
+    var started = Date.now();
+    var limit = maxWaitMs || 240000;
+    var t = setInterval(function () {
+      var b = g(btnId);
+      var stillBusy = false;
+      try {
+        stillBusy = !!(b && (b.disabled || b.getAttribute('aria-busy') === '1' ||
+          /실행|처리|기록|중…/.test(String(b.textContent || '')) && b.disabled));
+      } catch (e) {}
+      if (stillBusy && Date.now() - started < limit) return;
+      clearInterval(t);
+      if (Date.now() - started < 1200) return;   /* 클릭 직후 깜빡임 방지 */
+      try { refreshLive107(null, null); } catch (e) {}
+    }, 700);
+  }
+
+  /* ==========================================================================
+   * [요청1-b] [④ 예외 리스트 보기] 모달에도 [🔄 새로고침] 추가
+   * ========================================================================= */
+  function hookModal107() {
+    var hd = q('#v10Modal .v10-shd');
+    if (!hd || g('v107ModalRefresh')) return;
+    var b = document.createElement('button');
+    b.className = 'btn btn-ghost btn-sm';
+    b.id = 'v107ModalRefresh';
+    b.type = 'button';
+    b.textContent = '🔄 새로고침';
+    b.title = '이 창을 지금 시점의 3단계 계산으로 다시 엽니다';
+    var closeBtn = g('v10ModalClose');
+    if (closeBtn && closeBtn.parentNode === hd) hd.insertBefore(b, closeBtn);
+    else hd.appendChild(b);
+    b.onclick = async function () {
+      busyS(b, true);
+      try {
+        var d = await window.api('stage3_final', { month: cm(), execute: false });
+        if (window.renderStage3) { try { window.renderStage3(d); } catch (e) {} }
+        var ttl = g('v10ModalTitle');
+        if (ttl) ttl.textContent = '④ 예외 리스트 · ' + cm() + ' (실시간)';
+        if (window.openExListModal) { try { window.openExListModal(d); } catch (e) {} }
+        logS('④ 예외 리스트 — 지금 시점으로 다시 읽었습니다.', 'ok');
+        toastS('예외 리스트를 지금 시점으로 다시 계산했습니다.', 'ok');
+      } catch (e) { logS(e.message, 'err'); toastS(e.message, 'err'); }
+      busyS(b, false, '🔄 새로고침');
+    };
+  }
+
+  /* ==========================================================================
+   * [요청2] 📌 [고정 예외 등록] → 그 달 실제 '거래처 전체 제외' 예외 생성
+   *   · 기존 renderFixedBox 는 버튼 onclick 을 매번 새로 지정합니다.
+   *     → '캡처 단계'에서 먼저 가로채 v10.7 동작으로 바꿉니다(기존 코드 무수정).
+   * ========================================================================= */
+  document.addEventListener('click', async function (ev) {
+    var tgt = ev.target;
+    var b = (tgt && tgt.closest) ? tgt.closest('[data-v10fix]') : null;
+    if (!b) return;
+    if (b.getAttribute('data-v107busy') === '1') return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+
+    var name = b.getAttribute('data-v10fix');
+    if (!name) return;
+    var month = cm();
+    var ok = await ask('📌 고정 예외 등록',
+      name + ' 을(를) ' + month + ' 에 “② 거래처 전체 제외”로 실제 등록합니다.\n\n' +
+      '· 이 거래처는 이번 달 세금계산서를 발행하지 않는 것으로 계산됩니다.\n' +
+      '· 고정 거래처로도 저장되어 다음 달 목록에 자동으로 다시 나타납니다.\n' +
+      '· 되돌리려면 등록 예외 리스트에서 [취소]를 누르면 됩니다.\n\n진행할까요?', '등록');
+    if (!ok) return;
+
+    b.setAttribute('data-v107busy', '1');
+    busyS(b, true);
+    try {
+      var d = await window.api('fixed_apply_v107', {
+        month: month, clientName: name, reason: '고정 거래처 — 매월 거래처 전체 제외'
+      });
+      logS(d.summary, 'ok');
+      toastS(d.summary, 'ok');
+      /* 고정거래처 박스 + E 리스트 + 3단계 미리보기까지 한 번에 갱신 */
+      await refreshLive107(null, null);
+    } catch (e) {
+      logS(e.message, 'err');
+      toastS(e.message, 'err');
+    }
+    b.removeAttribute('data-v107busy');
+    busyS(b, false, '고정 예외 등록');
+  }, true);
+
+  /* ==========================================================================
+   * [요청3] 누락 검증 표 — [수량/금액 조정] → [차액(수량/금액)] + [차이] 열
+   *   · 값 자체는 서버 v10.7 이 '한 번만 반영'으로 계산해 내려줍니다.
+   * ========================================================================= */
+  function tableByHeader107(host, mustHave) {
+    var out = null;
+    qa('table', host).forEach(function (t) {
+      if (out) return;
+      var th = qa('thead th', t).map(function (x) { return (x.textContent || '').trim(); });
+      var hitAll = mustHave.every(function (k) { return th.indexOf(k) >= 0; });
+      if (hitAll) out = { table: t, th: th };
+    });
+    return out;
+  }
+
+  function stampDiffTable(d) {
+    var host = g('s3Out');
+    if (!host || !d || !d.recon2) return;
+    var idn = d.recon2.identity || {};
+    var found = tableByHeader107(host, ['기준', '⑤ 최종발행', '② DB', '판정']);
+    if (!found) return;
+
+    var t = found.table;
+    var ths = qa('thead th', t);
+
+    /* (1) 헤더 명칭 정리 + [차이] 열 추가 */
+    ths.forEach(function (th) {
+      var txt = (th.textContent || '').trim();
+      if (txt === '수량/금액 조정') {
+        th.textContent = '차액(수량/금액)';
+        th.title = '차액 = 출고(기준) − 실제 발행. 수정발행·보류해소로 발행하지 않은 몫(양수)입니다.';
+      }
+      if (txt === '판정') {
+        var hasDiff = qa('thead th', t).some(function (x) {
+          return (x.textContent || '').trim() === '차이';
+        });
+        if (!hasDiff) {
+          var nth = document.createElement('th');
+          nth.className = 'num v107-th-diff';
+          nth.textContent = '차이';
+          nth.title = '② 세금계산서 DB − 합계. 0 이면 정상입니다.';
+          th.parentNode.insertBefore(nth, th.nextSibling);
+        }
+      }
+    });
+
+    /* (2) [차이] 열 값 — 행 순서: 건수(페이지) / 박스 / 금액 */
+    var diffs = [0, n0(idn.gapQty), Math.round(n0(idn.gapAmount))];
+    var units = ['건', '박스', '원'];
+    qa('tbody tr', t).forEach(function (tr, ri) {
+      if (tr.getAttribute('data-v107diff') === '1') return;
+      if (!tr.cells || tr.cells.length < 2) return;
+      var last = tr.cells[tr.cells.length - 1];
+      var td = document.createElement('td');
+      td.className = 'num';
+      if (ri >= 3) {
+        td.textContent = '-';
+      } else {
+        var dv = diffs[ri] || 0, u = units[ri] || '';
+        var tol = (u === '원') ? 1 : 0.001;
+        var same = Math.abs(dv) < tol;
+        td.style.fontWeight = '900';
+        td.style.color = same ? '#0F7A3D' : '#B3261E';
+        td.style.background = same ? '#F6FDF9' : '#FDECEA';
+        td.textContent = same ? '0'
+          : ((dv > 0 ? '+' : '') + (u === '원' ? Math.round(dv).toLocaleString('ko-KR') : fn(dv)) + u);
+      }
+      last.parentNode.appendChild(td);
+      tr.setAttribute('data-v107diff', '1');
+    });
+
+    /* (3) 표 아래 한 줄 설명 (한 번만) */
+    if (!g('v107Note')) {
+      var note = document.createElement('div');
+      note.id = 'v107Note';
+      note.style.cssText = 'margin-top:6px;font-size:11.6px;line-height:1.7;color:#334155';
+      note.innerHTML =
+        '<b style="color:#1D4ED8">[v10.7] 차액 = 출고 − 실제 발행 (한 번만 반영)</b><br>' +
+        '· 차액(수량) <b>' + fn(idn.diffQty) + '박스</b> / 차액(금액) <b>' + fw(idn.diffAmount) + '</b>' +
+        ' — 수정발행(수량·금액·비율)과 보류→귀속월 발행 처리로 <b>발행하지 않은 몫</b>입니다.<br>' +
+        '· 이 값을 ⑤ 최종발행 옆에 <b>한 번만</b> 더합니다. (예전에는 ⑤ 에서 이미 빠진 값에 또 빼서 2배로 어긋났습니다)<br>' +
+        '· ② DB − 합계 = <b>' + fn(idn.gapQty) + '박스 / ' + fw(idn.gapAmount) + '</b> → 0 이면 정상입니다.';
+      var wrap = t.closest('.tblwrap') || t;
+      if (wrap && wrap.parentNode) wrap.parentNode.insertBefore(note, wrap.nextSibling);
+    }
+  }
+
+  /* 정량적 더블체크 문구의 '조정' → '차액' 명칭 통일 (4개 영역 중 2·4번) */
+  function renameAdjust107() {
+    var box = g('dc105');
+    if (box) {
+      if (box.innerHTML.indexOf('(조정)') >= 0) box.innerHTML = box.innerHTML.split('(조정)').join('(차액)');
+      if (box.innerHTML.indexOf(' + 조정 ') >= 0) box.innerHTML = box.innerHTML.split(' + 조정 ').join(' + 차액 ');
+      if (box.innerHTML.indexOf('수량/금액 조정') >= 0) {
+        box.innerHTML = box.innerHTML.split('수량/금액 조정').join('차액');
+      }
+      var hd = box.querySelector('b');
+      if (hd && (hd.textContent || '').indexOf('v10.7') < 0) {
+        hd.innerHTML = '🔎 누락 검증 · 정량적 더블체크 ' +
+          '<span style="font-size:11.4px;color:#1D4ED8">(v10.7 — 차액 1회 반영 · 실제 산술 검증)</span>';
+      }
+    }
+    qa('#s3Out .note').forEach(function (n) {
+      if (n.id === 'dc105') return;
+      if ((n.textContent || '').indexOf('수량/금액 조정') >= 0) {
+        n.innerHTML = n.innerHTML.split('수량/금액 조정').join('차액');
+      }
+    });
+  }
+
+  /* 재반영 버튼 색·크기 (CSS + 인라인 이중 보강) */
+  function styleReapply107() {
+    var b = g('v10Reapply');
+    if (!b) return;
+    if (b.getAttribute('data-v107style') === '1') return;
+    b.setAttribute('data-v107style', '1');
+    b.textContent = '🔄 재반영 (시트 다시 기록)';
+    b.title = '예외를 바꾸지 않고 최종 확정 계산을 다시 실행해 홈택스 엑셀업로드양식에 다시 기록합니다.';
+    b.style.cssText += ';font-size:13.6px;font-weight:900;padding:10px 18px;border-radius:10px;' +
+      'background:#0B1B33;border:1px solid #0B1B33;color:#fff;box-shadow:0 3px 9px rgba(11,27,51,.22)';
+  }
+
+  /* ==========================================================================
+   * 후처리 묶음
+   * ========================================================================= */
+  function decorate107() {
+    try { hookModal107(); } catch (e) {}
+    try { styleReapply107(); } catch (e) {}
+    try { exBar107(); } catch (e) {}
+    try { paintStamp107(); } catch (e) {}
+    var d = window.__v107S3 || window.__v106S3;
+    try { if (d) { stampDiffTable(d); renameAdjust107(); } } catch (e) {}
+  }
+
+  /* api 응답 가로채기 — client_list(계산 시각) / stage3_final(검증 데이터) 보관 */
+  if (window.api && !window.__v107ApiWrap) {
+    var _api107 = window.api;
+    window.api = async function (action, extra) {
+      var d = await _api107(action, extra);
+      try {
+        if (action === 'client_list' || action === 'client_list_v103' ||
+            action === 'client_list_v106' || action === 'client_list_v107') {
+          window.__v107Clients = d;
+          window.__v106Clients = d;
+          window.__v102Clients = d;
+          setTimeout(function () { try { paintStamp107(); exBar107(); } catch (e) {} }, 0);
+        }
+        if ((action === 'stage3_final' || action === 'stage3_final_v107') && d) {
+          window.__v107S3 = d;
+          window.__v106S3 = d;
+        }
+      } catch (e) {}
+      return d;
+    };
+    window.__v107ApiWrap = true;
+  }
+
+  /* renderStage3 덧입힘 — 기존 래퍼 체인은 그대로 두고 마지막 한 겹만 추가 */
+  if (window.renderStage3 && !window.__v107R3Wrap) {
+    var _r3v107 = window.renderStage3;
+    window.renderStage3 = function (d) {
+      _r3v107(d);
+      try {
+        if (d) { window.__v107S3 = d; window.__v106S3 = d; }
+        if (d && d.recon2) setTimeout(decorate107, 60);
+      } catch (e) {}
+    };
+    window.__v107R3Wrap = true;
+  }
+
+  /* 새로고침 버튼들을 '진짜 서버 재조회'로 교체 */
+  function hookRefreshButtons107() {
+    ['v106ExRefresh', 'v102ExRefresh'].forEach(function (id) {
+      var b = g(id);
+      if (!b || b.getAttribute('data-v107rf') === '1') return;
+      b.setAttribute('data-v107rf', '1');
+      b.onclick = function (ev) {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        refreshLive107(b, '🔄 새로고침');
+      };
+    });
+  }
+
+  /* 예외 등록·취소·보류해소·최종확정 직후 자동 실시간 반영 */
+  function hookAutoRefresh107() {
+    ['v10Save', 'btnExSave', 'btnRowSave', 'rw103Save'].forEach(function (id) {
+      var b = g(id);
+      if (!b || b.getAttribute('data-v107auto') === '1') return;
+      b.setAttribute('data-v107auto', '1');
+      b.addEventListener('click', function () {
+        setTimeout(function () { try { refreshLive107(null, null); } catch (e) {} }, 2200);
+      });
+    });
+    /* 서버 작업이 오래 걸리는 버튼은 '끝난 뒤'에 한 번만 */
+    ['btnS3', 'h81Issue', 'v10Reapply'].forEach(function (id) {
+      var b = g(id);
+      if (!b || b.getAttribute('data-v107auto2') === '1') return;
+      b.setAttribute('data-v107auto2', '1');
+      b.addEventListener('click', function () { try { refreshAfterIdle107(id); } catch (e) {} });
+    });
+  }
+
+  /* ---------------- 부팅 ---------------- */
+  function boot107() {
+    try { hookRefreshButtons107(); } catch (e) {}
+    try { hookAutoRefresh107(); } catch (e) {}
+    try { hookModal107(); } catch (e) {}
+    try { styleReapply107(); } catch (e) {}
+    try { exBar107(); } catch (e) {}
+    try { paintStamp107(); } catch (e) {}
+    var d = window.__v107S3 || window.__v106S3;
+    try { if (d) { stampDiffTable(d); renameAdjust107(); } } catch (e) {}
+  }
+  boot107();
+  [260, 900, 1800, 3000, 5200].forEach(function (ms) { setTimeout(boot107, ms); });
+
+  /* 최종 확정 결과 영역이 다시 그려지면 표를 다시 손봅니다 */
+  try {
+    var s3o = g('s3Out');
+    if (s3o) {
+      new MutationObserver(function () {
+        try { styleReapply107(); renameAdjust107(); } catch (e) {}
+      }).observe(s3o, { childList: true });
+    }
+    var exo = g('exOut');
+    if (exo) {
+      new MutationObserver(function () {
+        try { exBar107(); hookRefreshButtons107(); paintStamp107(); } catch (e) {}
+      }).observe(exo, { childList: true });
+    }
+  } catch (e) {}
+
+  var mEl = g('month');
+  if (mEl) mEl.addEventListener('change', function () {
+    setTimeout(function () { try { boot107(); } catch (e) {} }, 600);
+  });
+
+  /* 매뉴얼(v10.7) — 요청 3가지를 1:1 로 매핑한 초등생 눈높이 설명 */
+  function renderManual107() {
+    if (g('manualV107') || !g('manualBody')) return;
+    window.api('manual_v107', {}).then(function (d) {
+      var body = g('manualBody');
+      if (!d || !d.v107 || !body || g('manualV107')) return;
+      var h = '<div id="manualV107">' +
+        '<h3 style="font-size:13.8px;margin:18px 0 8px">🆕 [v10.7] 이번 최종 업데이트 — 요청 3가지 1:1 설명</h3>';
+      d.v107.forEach(function (sec) {
+        h += '<div class="note info" style="margin:0 0 8px"><b>' + esc(sec.no) + '. ' + esc(sec.title) + '</b><ul>' +
+          (sec.items || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+      });
+      h += '<div class="note ok" style="margin:10px 0 0"><b>✅ 정상 동작 확인 순서 (3분)</b><ol>' +
+        '<li>집계월 선택 → [0 스냅샷 조회] → [1단계 실행] → [2단계 실행(시트 기록)]</li>' +
+        '<li>E 세션에서 예외(수정발행/보류/제외) 등록 → <b>📋 리스트 숫자가 즉시 바뀌는지</b> 확인</li>' +
+        '<li>[3 최종 확정]의 <b>누락 검증 표에서 [차이] 열이 전부 0</b>인지 확인 (= 같음)</li>' +
+        '<li>구글시트 “엑셀업로드양식”의 합계와 리스트의 발행박스·발행금액을 눈으로 대조</li>' +
+        '</ol></div></div>';
+      body.insertAdjacentHTML('beforeend', h);
+    })['catch'](function () {});
+  }
+  setTimeout(renderManual107, 3600);
+  try {
+    if (g('manualBody')) {
+      new MutationObserver(function () { renderManual107(); })
+        .observe(g('manualBody'), { childList: true });
+    }
   } catch (e) {}
 })();
 </script>
