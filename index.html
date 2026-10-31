@@ -583,7 +583,8 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzqHvsGFqJoIwGXOFXHsXKIwEakQHAFs-7qkoJdfAy0PnqNprdrZS9DIAglRLOFBOqC/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyLhP2kyUPYo3atPng6AfnVmHRMG_BlaAny_NFIPmpDKmyrJ46qSJTvta7DbLjCay-R/exec
+';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3215,6 +3216,7 @@ loadExceptions(true);
 })();
 </script>
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
@@ -6193,3 +6195,202 @@ loadExceptions(true);
 
 </body>
 </html>
+
+<script>
+/* ============================================================================
+ * ██  [v10.8] UI ADD-ON — 「요청 1 · 요청 2」 전용 패치
+ * ----------------------------------------------------------------------------
+ *  · 기존 화면/스크립트/함수는 한 줄도 삭제·수정하지 않았습니다(추가 전용).
+ *  · 이 블록은 파일 맨 끝에 덧붙기만 합니다.
+ *
+ *  [요청 1] ④ 예외 리스트 팝업에 다섯 번째 카드 [차액(수량&금액)] + 상세 리스트 추가
+ *           · 기존 4개 카드/상세표/정량적 더블체크 문장은 그대로 유지
+ *           · 값의 출처 = stage3_final 응답(3단계 최종 확정과 같은 계산)
+ *             → 카드 숫자와 누락검증·정량적 더블체크가 같은 값을 말합니다.
+ *
+ *  [요청 2] 서버(v10.8)에서 '최신 보류분 발행 이력'만 쓰도록 고쳤으므로,
+ *           화면은 값을 그대로 다시 읽기만 하면 됩니다.
+ *           + 팝업이 다시 그려질 때마다 카드/표를 자동으로 다시 붙입니다.
+ * ========================================================================== */
+(function () {
+  'use strict';
+  if (window.__v108Loaded) return;
+  window.__v108Loaded = true;
+
+  function g(id) { return document.getElementById(id); }
+  function n0(v) { return (v === null || v === undefined || v === '') ? 0 : Number(v); }
+  function r2(v) { return Math.round(n0(v) * 100) / 100; }
+  function fn(v) {
+    if (v === null || v === undefined || v === '') return '-';
+    return (Math.round(Number(v) * 100) / 100).toLocaleString('ko-KR');
+  }
+  function fw(v) {
+    if (v === null || v === undefined || v === '') return '-';
+    return Math.round(Number(v) || 0).toLocaleString('ko-KR') + '원';
+  }
+  /* 부호 있는 금액 표기 — 초과 발행은 마이너스로 보입니다 */
+  function fw2(v) {
+    var n = Math.round(Number(v) || 0);
+    return (n > 0 ? '+' : '') + n.toLocaleString('ko-KR') + '원';
+  }
+  function fn2(v) {
+    var n = Math.round(Number(v) * 100) / 100;
+    return (n > 0 ? '+' : '') + n.toLocaleString('ko-KR');
+  }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ------------------------------------------------------------------------
+   * 1) 차액 발생 행 추출
+   *    차액 = 출고(기준) − 실제 발행
+   *      · ③ 거래처 수정발행  → finalRows 의 baseQty/baseAmount 와 qty/base 차이
+   *      · ① 보류→귀속월 발행 → settled 의 baseQty/baseAmount 와 qty/base 차이
+   *    차액이 0인 행(정상 발행)은 리스트에 넣지 않습니다.
+   * ---------------------------------------------------------------------- */
+  function diffRowsV108(d) {
+    var out = [];
+    function add(r, settled) {
+      if (!r) return;
+      var bq = r2(r.baseQty), ba = Math.round(n0(r.baseAmount));
+      var q = r2(r.qty), a = Math.round(n0(r.base));
+      var dq = r2(bq - q), da = Math.round(ba - a);
+      if (!dq && !da) return;
+      var reason = r.calcMethod ||
+        ((r.applied && r.applied.length) ? r.applied.join(' / ') : (settled ? '보류→귀속월 발행 처리' : '수정발행'));
+      out.push({ client: r.clientName || '(거래처없음)', bq: bq, q: q, dq: dq,
+                 ba: ba, a: a, da: da, reason: reason, settled: !!settled });
+    }
+    (d.finalRows || []).forEach(function (r) { add(r, false); });
+    (d.settled || []).forEach(function (r) { add(r, true); });
+    out.sort(function (x, y) {
+      if (x.settled !== y.settled) return x.settled ? -1 : 1;
+      return Math.abs(y.da) - Math.abs(x.da);
+    });
+    return out;
+  }
+
+  /* ------------------------------------------------------------------------
+   * 2) 카드 + 상세표를 팝업에 붙이기
+   * ---------------------------------------------------------------------- */
+  function injectV108() {
+    var bd = g('v10ModalBody');
+    var ttl = g('v10ModalTitle');
+    if (!bd || !ttl) return;
+    if (String(ttl.textContent || '').indexOf('④ 예외 리스트') < 0) return;
+    if (g('v108DiffCard')) return;                       /* 이미 붙어 있음 */
+
+    var d = window.__v107S3 || window.__v106S3;
+    if (!d) return;
+
+    var list = diffRowsV108(d);
+    var t = d.totals || {};
+    var tQty = (t.diffQty === undefined || t.diffQty === null) ? null : r2(t.diffQty);
+    var tAmt = (t.diffAmount === undefined || t.diffAmount === null) ? null : Math.round(n0(t.diffAmount));
+    if (tQty === null) tQty = r2(list.reduce(function (s, x) { return s + x.dq; }, 0));
+    if (tAmt === null) tAmt = Math.round(list.reduce(function (s, x) { return s + x.da; }, 0));
+
+    /* --- 카드 (기존 .kpis 안에 다섯 번째로 추가) --- */
+    var kpis = bd.querySelector('.kpis');
+    if (kpis) {
+      var card = document.createElement('div');
+      card.id = 'v108DiffCard';
+      card.className = 'kpi warn';
+      card.innerHTML =
+        '<div class="t">차액(수량&amp;금액)</div>' +
+        '<div class="v">' + fn(list.length) + '건</div>' +
+        '<div class="hint" style="margin:2px 0 0">' + fn(tQty) + '박스 · ' + fw(tAmt) + '</div>';
+      kpis.appendChild(card);
+    }
+
+    /* --- 상세 리스트 --- */
+    var h = '<h4 id="v108DiffHead" style="margin:12px 0 6px;font-size:12.5px">차액(수량/금액) 상세 — 출고 기준 − 실제 발행</h4>';
+    if (!list.length) {
+      h += '<div class="note">차액이 발생한 거래처가 없습니다. (모든 건이 출고값 그대로 발행되었습니다.)</div>';
+    } else {
+      h += '<div class="v106-tbl" id="v108DiffTbl"><table><thead><tr>' +
+        '<th>거래처</th>' +
+        '<th class="num">출고박스</th><th class="num">발행박스</th><th class="num">차액(수량)</th>' +
+        '<th class="num">출고금액</th><th class="num">발행금액</th><th class="num">차액(금액)</th>' +
+        '<th>사유</th></tr></thead><tbody>' +
+        list.map(function (x) {
+          return '<tr>' +
+            '<td>' + esc(x.client) + '</td>' +
+            '<td class="num">' + fn(x.bq) + '</td>' +
+            '<td class="num">' + fn(x.q) + '</td>' +
+            '<td class="num" style="color:#B45309;font-weight:900">' + fn2(x.dq) + '</td>' +
+            '<td class="num">' + fw(x.ba) + '</td>' +
+            '<td class="num">' + fw(x.a) + '</td>' +
+            '<td class="num" style="color:#B45309;font-weight:900">' + fw2(x.da) + '</td>' +
+            '<td>' + esc(x.reason) + '</td>' +
+            '</tr>';
+        }).join('') +
+        '<tr style="background:#F8FAFC;font-weight:900">' +
+        '<td colspan="3">합계 ' + fn(list.length) + '건</td>' +
+        '<td class="num">' + fn2(tQty) + '</td><td colspan="2"></td>' +
+        '<td class="num">' + fw2(tAmt) + '</td><td></td></tr>' +
+        '</tbody></table></div>' +
+        '<p class="hint" style="margin:6px 0 0">· 차액 = 출고(기준) − 실제 발행. 즉 <b>계산서를 쓰지 않고 남겨 둔 몫</b>입니다. ' +
+        '③ 거래처 수정발행과 ① 발행보류 → 보류→귀속월 발행 처리로 발행이 줄어든 건만 모았습니다. ' +
+        '(제외·기발행완료·보류(대기)·사업자번호없음은 각자의 카드에 이미 있습니다.)</p>';
+    }
+    bd.insertAdjacentHTML('beforeend', h);
+  }
+
+  /* 팝업이 그려질 때마다 카드/표를 다시 붙입니다 (지워져도 자동 복구) */
+  try {
+    var bd0 = g('v10ModalBody');
+    if (bd0) {
+      new MutationObserver(function () { try { injectV108(); } catch (e) {} })
+        .observe(bd0, { childList: true });
+    }
+  } catch (e) {}
+
+  /* 팝업 열기 버튼 직후에도 한 번 더 (타이밍 보정) */
+  ['btnV10ExList', 'v107ModalRefresh'].forEach(function (id) {
+    var b = g(id);
+    if (!b) return;
+    b.addEventListener('click', function () {
+      [120, 600, 1400].forEach(function (ms) { setTimeout(function () { try { injectV108(); } catch (e) {} }, ms); });
+    });
+  });
+
+  function bootV108() {
+    try { injectV108(); } catch (e) {}
+  }
+  bootV108();
+  [400, 1200, 2500, 5000].forEach(function (ms) { setTimeout(bootV108, ms); });
+
+  /* ------------------------------------------------------------------------
+   * 3) 사용 매뉴얼 — v10.8 섹션을 웹앱 매뉴얼에 덧붙임
+   * ---------------------------------------------------------------------- */
+  function renderManualV108() {
+    if (g('manualV108') || !g('manualBody')) return;
+    window.api('manual_v108', {}).then(function (d) {
+      var body = g('manualBody');
+      if (!d || !d.v108 || !body || g('manualV108')) return;
+      var h = '<div id="manualV108">' +
+        '<h3 style="font-size:13.8px;margin:18px 0 8px">🆕 [v10.8] FINAL — 요청 2가지 1:1 설명</h3>';
+      d.v108.forEach(function (sec) {
+        h += '<div class="note info" style="margin:0 0 8px"><b>' + esc(sec.no) + '. ' + esc(sec.title) + '</b><ul>' +
+          (sec.items || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+      });
+      h += '<div class="note ok" style="margin:10px 0 0"><b>✅ 이번 수정 확인 순서 (3분)</b><ol>' +
+        '<li>E 세션에서 ① 발행보류로 예외 등록 → [⏸→✅ 보류 통합 관리]에서 그 건 선택</li>' +
+        '<li>[최초 스냅샷 불러오기]로 원래 출고값 확인 → <b>실제 발행수량·발행금액을 직접 입력</b> → [보류 → 귀속월 발행 처리]</li>' +
+        '<li>📋 등록 예외 리스트의 발행박스·발행금액이 <b>방금 입력한 값</b>인지 확인</li>' +
+        '<li>구글시트 “엑셀업로드양식”의 그 거래처 행도 <b>같은 값</b>인지 확인</li>' +
+        '<li>[④ 예외 리스트 보기] 팝업 → 다섯 번째 카드 <b>차액(수량&amp;금액)</b> 와 상세표 확인</li>' +
+        '</ol></div></div>';
+      body.insertAdjacentHTML('beforeend', h);
+    })['catch'](function () {});
+  }
+  setTimeout(renderManualV108, 4200);
+  try {
+    if (g('manualBody')) {
+      new MutationObserver(function () { renderManualV108(); }).observe(g('manualBody'), { childList: true });
+    }
+  } catch (e) {}
+})();
+</script>
