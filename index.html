@@ -583,7 +583,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyTmhWMRpmoFdwhOwv_pO4i0ZPspxcFhx_etfQgx3uWjYAeqyD-WRKiZPAEXaHHos6y/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw7tXOer5OkZiMuBzUctMUA0nKdrjb9VXY-fmNs7jaOwA25ujdrrDVVE280c8r9thwh/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3215,6 +3215,7 @@ loadExceptions(true);
 })();
 </script>
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
@@ -6552,5 +6553,242 @@ loadExceptions(true);
   try { var mEl = g('month'); if (mEl) mEl.addEventListener('change', function () { showStatus(); }); } catch (e) {}
   setTimeout(renderManualV109, 5000);
   try { if (g('manualBody')) new MutationObserver(function () { renderManualV109(); }).observe(g('manualBody'), { childList: true }); } catch (e) {}
+})();
+</script>
+<script>
+/* ============================================================================
+ * ██  [v10.10] MAIN-SCREEN ADD-ON  —  3단계 화면에 「임시 보기 / 원복」 버튼 추가
+ * ----------------------------------------------------------------------------
+ *  · 이 블록은 파일 "맨 끝에 덧붙이기만" 했습니다(추가 전용).
+ *    기존 HTML / 기존 <script> / 기존 함수는 단 한 글자도 수정·삭제하지 않았습니다.
+ *  · 방식: 새 버튼을 만들고, onclick 에 [④ 예외 리스트 보기] 창의 기존 버튼
+ *          (v109HoldViewBtn / v109RestoreBtn) 의 onclick "함수 그 자체"를 그대로 연결합니다.
+ *          → 복사본이 아니라 같은 함수를 부르므로 확인창 문구·로그·토스트·배너·서버액션이
+ *            100% 동일합니다. (중복 구현 없음 = 로직이 갈라질 위험 없음)
+ *  · 서버(GAS)는 변경 없음. 이미 있는 hold_sheetview_v109 / hold_sheetview_restore_v109 사용.
+ * ========================================================================== */
+(function () {
+  var ID_VIEW = 'v109MainHoldViewBtn';
+  var ID_REST = 'v109MainRestoreBtn';
+  var TXT_VIEW = '📤 보류→귀속월 발행처리 리스트 연동';
+  var TXT_REST = '♻️ 원본 전체 재반영(원복)';
+
+  function g(id) { return document.getElementById(id); }
+  function srcView() { return g('v109HoldViewBtn'); }   /* ④ 창의 원본 버튼 */
+  function srcRest() { return g('v109RestoreBtn'); }    /* ④ 창의 원본 버튼 */
+
+  /* --------------------------------------------------------------------
+   * 1) 3단계 [미리보기 (변경 없음)] 바로 뒤에 버튼 2개 삽입
+   *    · 클래스/크기 = 미리보기 버튼과 동일(btn btn-ghost)
+   *    · 색은 회색(ghost) → [최종 확정 + 시트 기록](btn-dark)이 가장 눈에 띄게 유지됨
+   * ------------------------------------------------------------------ */
+  function ensureMain() {
+    var prev = g('btnS3Prev');
+    if (!prev || !prev.parentNode) return;         /* 3단계 영역이 아직 없으면 다음 차례에 */
+    var host = prev.parentNode;
+
+    if (!g(ID_VIEW)) {
+      var bv = document.createElement('button');
+      bv.className = 'btn btn-ghost';
+      bv.id = ID_VIEW;
+      bv.type = 'button';
+      bv.textContent = TXT_VIEW;
+      bv.title = '[④ 예외 리스트 보기] 창의 [📤 보류→귀속월 발행처리 리스트 연동] 과 완전히 같은 동작입니다';
+      host.insertBefore(bv, prev.nextSibling);
+    }
+    if (!g(ID_REST)) {
+      var br = document.createElement('button');
+      br.className = 'btn btn-ghost';
+      br.id = ID_REST;
+      br.type = 'button';
+      br.textContent = TXT_REST;
+      br.title = '[④ 예외 리스트 보기] 창의 [♻️ 원본 전체 재반영(원복)] 과 완전히 같은 동작입니다';
+      host.insertBefore(br, g(ID_VIEW).nextSibling);
+    }
+    wire();
+    pending();
+  }
+
+  /* --------------------------------------------------------------------
+   * 2) 원본 버튼의 onclick 함수를 "그대로" 연결
+   * ------------------------------------------------------------------ */
+  function wire() {
+    var bv = g(ID_VIEW), br = g(ID_REST);
+    var sv = srcView(), sr = srcRest();
+    if (!bv || !br || !sv || !sr) return;
+    if (typeof sv.onclick !== 'function' || typeof sr.onclick !== 'function') return;
+
+    if (bv.getAttribute('data-wired') !== '1') {
+      bv.onclick = function () { return runSame(this, sv.onclick, TXT_VIEW); };
+      bv.setAttribute('data-wired', '1');
+    }
+    if (br.getAttribute('data-wired') !== '1') {
+      br.onclick = function () { return runSame(this, sr.onclick, TXT_REST); };
+      br.setAttribute('data-wired', '1');
+    }
+  }
+
+  /* 아직 원본 버튼이 준비되지 않았을 때의 안전한 임시 클릭 처리
+     (준비되면 위 wire() 가 진짜 기능으로 덮어씁니다 — 눌러도 아무 일 없다가
+      나중에 눌러도 안 되는 상황을 막기 위한 안내용) */
+  function pending() {
+    var bv = g(ID_VIEW), br = g(ID_REST);
+    if (bv && bv.getAttribute('data-wired') !== '1') {
+      bv.onclick = function () {
+        try { ensureMain(); } catch (e) {}
+        if (bv.getAttribute('data-wired') !== '1') {
+          try { toast('화면 준비 중입니다. 1~2초 뒤 다시 눌러 주세요(또는 [④ 예외 리스트 보기] 창에서 같은 버튼을 쓰세요).', 'warn'); } catch (e) {}
+        } else { return runSame(bv, srcView().onclick, TXT_VIEW); }
+      };
+    }
+    if (br && br.getAttribute('data-wired') !== '1') {
+      br.onclick = function () {
+        try { ensureMain(); } catch (e) {}
+        if (br.getAttribute('data-wired') !== '1') {
+          try { toast('화면 준비 중입니다. 1~2초 뒤 다시 눌러 주세요(또는 [④ 예외 리스트 보기] 창에서 같은 버튼을 쓰세요).', 'warn'); } catch (e) {}
+        } else { return runSame(br, srcRest().onclick, TXT_REST); }
+      };
+    }
+  }
+
+  /* 이 버튼도 '처리 중' 표시만 자기 자신에게 하고, 실제 동작은 원본 함수가 합니다. */
+  function runSame(btn, fn, label) {
+    try { busy(btn, true); } catch (e) {}
+    return Promise.resolve()
+      .then(function () { return fn.call(btn); })
+      ['catch'](function (e) {
+        try { log((e && e.message) || String(e), 'err'); } catch (_) {}
+        try { toast((e && e.message) || String(e), 'err'); } catch (_) {}
+      })
+      .then(function () { try { busy(btn, false, label); } catch (e) {} });
+  }
+
+  /* --------------------------------------------------------------------
+   * 3) 부팅 / 복구 (다른 스크립트가 늦게 그려도 계속 확인)
+   * ------------------------------------------------------------------ */
+  function boot() { try { ensureMain(); } catch (e) {} }
+  boot();
+  [200, 600, 1200, 2500, 5000, 8000].forEach(function (ms) { setTimeout(boot, ms); });
+  try {
+    new MutationObserver(function () {
+      try {
+        var bv = g(ID_VIEW), br = g(ID_REST);
+        if (!bv || !br || bv.getAttribute('data-wired') !== '1' || br.getAttribute('data-wired') !== '1') ensureMain();
+      } catch (e) {}
+    }).observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
+})();
+
+/* ============================================================================
+ * ██  [v10.10] 매뉴얼 — "통합 매뉴얼"을 매뉴얼 창 맨 위에 붙입니다(내용 추가 전용)
+ * ========================================================================== */
+(function () {
+  function g(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  var T = function (rows, head) {
+    var h = '<div class="tblwrap"><table><thead><tr>' +
+      head.map(function (x) { return '<th>' + esc(x) + '</th>'; }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+      h += '<tr>' + r.map(function (x, i) {
+        return '<td' + (i === 0 ? ' style="font-weight:800;white-space:nowrap"' : ' class="mid"') + '>' + x + '</td>';
+      }).join('') + '</tr>';
+    });
+    return h + '</tbody></table></div>';
+  };
+
+  function build() {
+    var h = '';
+    h += '<div id="manualV110Master">';
+    h += '<div class="note ok" style="margin-bottom:10px"><b>📘 세금계산서 컨트롤 타워 — 최종 통합 매뉴얼 (v10.10)</b><br>' +
+         '이 한 장이면 한 달 업무가 끝납니다. 아래 “한 달 흐름”대로 0 → 1 → 2 → E → 3 → R 순서로만 움직이면 됩니다.<br>' +
+         '<span style="color:#0F7A3D">※ 이 아래에 있는 예전 버전별 설명(v10.3 ~ v10.9)은 “변경 이력”입니다. 평소에는 읽지 않아도 됩니다.</span></div>';
+
+    h += '<h3 style="font-size:13.8px;margin:14px 0 8px">1. 한 달 흐름 (이 순서만 지키면 됩니다)</h3>';
+    h += T([
+      ['0', '<b>스냅샷 조회</b> — 이번 달 출고 건수·거래처·박스·금액을 고정합니다. 이 숫자가 나중에 “누락이 없는지” 비교하는 기준입니다.'],
+      ['1', '<b>노션 세금계산서 DB 자동화</b> — 노션에서 [계산서 발행] 버튼을 누르면 체크가 켜지고, 트리거가 세금계산서 DB에 페이지를 만듭니다. 웹앱에서는 [진단]으로 대상 건수를 본 뒤 [1단계 실행]을 누르면 남은 건을 자동으로 이어서 처리합니다.'],
+      ['2', '<b>홈택스 엑셀양식 초안</b> — 같은 사업자번호+거래처는 1행으로 합산해 A7부터 기록합니다. 먼저 [미리보기 (변경 없음)]로 숫자를 확인하세요.'],
+      ['E', '<b>예외 처리</b> — “이번 달엔 이 거래처를 빼야 하는데” 하는 건을 여기서 등록합니다. 유형은 4가지뿐입니다.'],
+      ['3', '<b>최종 확정 + 시트 기록</b> — 예외까지 반영해 엑셀업로드양식을 A7:BG140 리셋 후 다시 씁니다. 이 파일을 홈택스에 업로드합니다.'],
+      ['R', '<b>리포트</b> — 월/분기/반기/연도 발행률과 차액을 확인합니다.']
+    ], ['단계', '할 일']);
+
+    h += '<h3 style="font-size:13.8px;margin:16px 0 8px">2. 예외 4유형 (딱 4개만 기억하세요)</h3>';
+    h += T([
+      ['① 발행보류<br><span style="font-weight:400;color:#64748B">(귀속월 발행처리)</span>', '이번 달엔 발행하지 않고 “○월 출고”라는 딱지는 그대로 붙여 둡니다. 나중에 [⏸→✅ 보류 통합 관리]에서 실제 수량·금액을 확정하면 그 귀속월 계산서로 발행됩니다.', '발행 0 · 미발행으로 남음'],
+      ['② 거래처 전체 제외', '이 거래처는 이번 달 계산서를 아예 쓰지 않습니다. 매달 반복되는 곳은 [고정 거래처]로 저장해 두면 다음 달 목록에 자동으로 뜹니다.', '그 거래처 전부 발행 0'],
+      ['③ 거래처 수정발행', '[발행수량] · [발행금액] · [발행비율] 중 넣고 싶은 값을 넣습니다. 비율을 넣으면 수량·금액이 비율대로 자동 계산됩니다(버림).', '입력값 그대로 발행'],
+      ['④ 기발행완료<br><span style="font-weight:400;color:#64748B">(납품 건별 제외)</span>', '거래처가 기다리지 못해 이미 따로 발행해 준 경우. 그 납품건만 일괄발행에서 빼고, 발행률에는 “발행”으로 잡힙니다.', '해당 건만 제외 · 이력에 기발행완료']
+    ], ['유형', '언제 쓰나', '계산 결과']);
+
+    h += '<h3 style="font-size:13.8px;margin:16px 0 8px">3. 예외 등록하는 두 가지 입구 (결과는 완전히 같습니다)</h3>';
+    h += '<div class="note info"><ul style="margin:0;padding-left:18px">' +
+      '<li><b>입구 A — ① 계산서 수정발행</b> : 거래처를 <b>검색해서</b> 고르고 유형을 선택합니다.</li>' +
+      '<li><b>입구 B — E 예외 처리 총 출고 거래처 리스트의 [✎ 수정]</b> : 그 거래처 정보가 ② 행 수정 영역에 채워지며 시작합니다.</li>' +
+      '<li>두 입구 모두 → 거래처 확인 → 유형 4가지 중 선택 → 수량/금액/비율 확인 → <b>[예외 등록]</b> 순서로 똑같습니다.</li>' +
+      '<li>화면에 보이는 리스트는 “거울”입니다. <b>[예외 등록]을 눌러야</b> 그 달에 실제로 반영됩니다.</li></ul></div>';
+
+    h += '<h3 style="font-size:13.8px;margin:16px 0 8px">4. 보류 → 귀속월 발행 처리 4단계</h3>';
+    h += '<div class="note info"><ol style="margin:0;padding-left:18px">' +
+      '<li>[⏸→✅ 보류 통합 관리]에서 보류 건을 고릅니다.</li>' +
+      '<li>[최초 스냅샷 불러오기] → 원래 출고값(건수·박스·금액)이 입력칸에 채워집니다.</li>' +
+      '<li>실제 발행수량 · 실제 발행금액을 거래처 요청대로 고칩니다.</li>' +
+      '<li>[보류 → 귀속월 발행 처리] → 원월(귀속월)은 그대로 유지된 채 확정됩니다.</li></ol>' +
+      '<span style="color:#0F7A3D">해소 이력(최초값 → 실제값)은 예외조정 시트에 남고, 원월 발행률에도 자동 반영됩니다.</span></div>';
+
+    h += '<h3 style="font-size:13.8px;margin:16px 0 8px">5. 📤 임시 보기 / ♻️ 원복 — 이제 두 곳에서 똑같이 쓸 수 있습니다</h3>';
+    h += '<div class="note warn"><b>어디에 있나</b><br>' +
+      '· <b>[④ 예외 리스트 보기] 창 위쪽</b> (기존 위치)<br>' +
+      '· <b>3 최종 확정 · 발행이력 기록 → [미리보기 (변경 없음)] 바로 옆</b> (v10.10에서 새로 추가)<br>' +
+      '<span style="color:#92400E">두 곳의 버튼은 <b>완전히 같은 기능</b>입니다. 어디를 눌러도 결과가 같습니다.</span></div>';
+    h += '<div class="note warn" style="margin-top:8px"><b>⚠️ 임시 보기 3원칙 (이건 꼭 지키세요)</b><ol style="margin:6px 0 0;padding-left:18px">' +
+      '<li><b>[📤 보류→귀속월 발행처리 리스트 연동]</b> → 시트에는 그 귀속월의 확정분<b>만</b> 보입니다(임시 상태).</li>' +
+      '<li>그 상태에서 시트 내용을 복사해 <b>홈택스에 선택 업로드</b>합니다.</li>' +
+      '<li>끝나면 <b>반드시 [♻️ 원본 전체 재반영(원복)]</b> → 전체 데이터로 복원 확인 → 그 다음 [🔒 최종 발행종료 (월 마감)].</li>' +
+      '</ol><span style="color:#92400E">임시 보기 중에는 월 마감이 <b>자동으로 막힙니다</b>(서버 가드). 화면 오른쪽 아래 ⚠️ 배너에서 바로 원복도 가능합니다.</span></div>';
+
+    h += '<h3 style="font-size:13.8px;margin:16px 0 8px">6. 자주 막히는 곳 Q&A</h3>';
+    h += T([
+      ['1단계가 멈춘 것 같아요', '창을 닫지 말고 기다리세요. 남은 건이 0이 될 때까지 자동으로 이어서 처리합니다. 급하면 [1단계 실행]을 다시 눌러도 중복 생성되지 않습니다.'],
+      ['엑셀양식이 비어 보여요', '2단계 또는 3단계를 실행한 뒤 [엑셀 기록 확인]을 누르세요. 매번 A7:BG140을 리셋하고 다시 씁니다.'],
+      ['예외를 등록했는데 숫자가 그대로예요', '등록 직후 표가 자동으로 다시 계산됩니다. [🔄 새로고침]을 누르거나 3단계 [미리보기]로 최종 반영을 확인하세요.'],
+      ['보류 목록이 안 보여요', '[⏸→✅ 보류 통합 관리]의 [🔄 새로고침]을 누르세요. 그래도 없으면 [🔍 보류 검색]으로 거래처명을 찾아보세요.'],
+      ['숫자가 시트와 달라 보여요', '리스트 맨 위 “실시간 · 시각”이 서버가 계산을 끝낸 시각입니다. [🔄 새로고침] 후 그 시각이 바뀌면 숫자도 새로 계산된 것입니다.'],
+      ['집계월이 납품일자와 달라요', '집계월은 노션이 <b>업체계산서발행요청일 → 납품일자</b> 순서로 계산합니다. 앱은 그 결과를 그대로 씁니다.'],
+      ['월 마감을 눌렀는데 막혀요', '(1) 미발행 보류 건이 남아 있거나 (2) 임시 보기 상태입니다. 안내에 나온 대로 보류를 해소하거나 [♻️ 원복]을 먼저 누르세요.']
+    ], ['증상', '해결']);
+
+    h += '<h3 style="font-size:13.8px;margin:16px 0 8px">7. 안전 수칙 5개</h3>';
+    h += '<div class="note ok"><ol style="margin:0;padding-left:18px">' +
+      '<li>임시 보기로 홈택스 업로드를 마쳤으면 <b>무조건 원복</b>부터. (배너가 사라져야 정상)</li>' +
+      '<li>월 마감은 <b>원복 확인 후</b>에 누릅니다.</li>' +
+      '<li>숫자가 이상하면 추측하지 말고 <b>[🔄 새로고침] → [미리보기 (변경 없음)]</b> 순서로 다시 확인합니다.</li>' +
+      '<li>예외는 <b>[예외 등록]</b>을 눌러야 실제 반영됩니다. 리스트에 남아 있는 것만으로는 아무 일도 일어나지 않습니다.</li>' +
+      '<li>같은 달에 같은 예외를 두 번 등록하지 마세요. 시스템이 막아주지만, 중복은 숫자를 두 번 빼게 만듭니다.</li></ol></div>';
+
+    h += '</div>';
+    return h;
+  }
+
+  function renderMaster() {
+    var body = g('manualBody');
+    if (!body) return;
+    if (g('manualV110Master')) return;
+    try { body.insertAdjacentHTML('afterbegin', build()); } catch (e) {}
+  }
+
+  renderMaster();
+  [400, 1200, 3000, 6000].forEach(function (ms) { setTimeout(renderMaster, ms); });
+  try {
+    if (g('manualBody')) {
+      new MutationObserver(function () { renderMaster(); }).observe(g('manualBody'), { childList: true });
+    }
+    new MutationObserver(function () { renderMaster(); }).observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
 })();
 </script>
