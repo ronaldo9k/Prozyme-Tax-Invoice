@@ -583,7 +583,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyLhP2kyUPYo3atPng6AfnVmHRMG_BlaAny_NFIPmpDKmyrJ46qSJTvta7DbLjCay-R/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyTmhWMRpmoFdwhOwv_pO4i0ZPspxcFhx_etfQgx3uWjYAeqyD-WRKiZPAEXaHHos6y/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3215,6 +3215,7 @@ loadExceptions(true);
 })();
 </script>
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
@@ -6391,5 +6392,165 @@ loadExceptions(true);
       new MutationObserver(function () { renderManualV108(); }).observe(g('manualBody'), { childList: true });
     }
   } catch (e) {}
+})();
+</script>
+<script>
+/* ============================================================================
+ * ██  [v10.9] UI ADD-ON — 「📤 보류→귀속월 발행처리 리스트 연동 (임시 보기)」
+ * ----------------------------------------------------------------------------
+ *  · 기존 화면/스크립트/함수는 한 줄도 삭제·수정하지 않았습니다(추가 전용).
+ *  · [④ 예외 리스트 보기] 모달 헤더에 버튼 2개를 '덧붙이고',
+ *    임시 보기 상태 배너와 웹앱 매뉴얼 v10.9 섹션만 추가합니다.
+ *  · 서버 액션: hold_sheetview_v109 / hold_sheetview_restore_v109 /
+ *               hold_sheetview_status_v109 / manual_v109
+ * ========================================================================== */
+(function () {
+  function g(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function cm() { var m = g('month'); return m ? m.value : ''; }
+  function ask(t, b, y) { try { return confirmBox(t, b, y); } catch (e) { return Promise.resolve(window.confirm(b)); } }
+  function logS(m, k) { try { log(m, k); } catch (e) {} }
+  function toastS(m, k) { try { toast(m, k); } catch (e) {} }
+  function busyS(b, on, label) { try { busy(b, on, label); } catch (e) {} }
+  function fn(v) { try { return Number(v || 0).toLocaleString('ko-KR'); } catch (e) { return String(v); } }
+  function fw(v) { try { return Number(v || 0).toLocaleString('ko-KR') + '원'; } catch (e) { return String(v); } }
+
+  /* --------------------------------------------------------------------
+   * 1) [④ 예외 리스트 보기] 모달 헤더에 버튼 2개 덧붙이기
+   * ------------------------------------------------------------------ */
+  function ensureButtons() {
+    var hd = document.querySelector('#v10Modal .v10-shd');
+    if (!hd || g('v109HoldViewBtn')) return;
+
+    function mk(id, txt, title, dark) {
+      var b = document.createElement('button');
+      b.className = dark ? 'btn btn-dark btn-sm' : 'btn btn-ghost btn-sm';
+      b.id = id; b.type = 'button'; b.textContent = txt; b.title = title;
+      if (dark) { b.style.background = '#1E5EFF'; b.style.color = '#fff'; b.style.fontWeight = '800'; }
+      return b;
+    }
+    var bView = mk('v109HoldViewBtn', '📤 보류→귀속월 발행처리 리스트 연동',
+      '선택한 귀속월의 보류→귀속월 발행처리 확정분만 엑셀업로드양식에 임시 기록합니다', true);
+    var bRestore = mk('v109RestoreBtn', '♻️ 원본 전체 재반영(원복)',
+      '엑셀업로드양식을 전체 발행 데이터로 되돌립니다(기존 [🔄 재반영] 과 같은 동작)', false);
+
+    var closeBtn = g('v10ModalClose');
+    if (closeBtn && closeBtn.parentNode === hd) { hd.insertBefore(bRestore, closeBtn); hd.insertBefore(bView, bRestore); }
+    else { hd.appendChild(bView); hd.appendChild(bRestore); }
+
+    bView.onclick = async function () {
+      var month = cm();
+      if (!/^\d{4}-\d{2}$/.test(month)) { toastS('먼저 상단 월 선택기에서 귀속월(YYYY-MM)을 선택하세요.', 'warn'); return; }
+      var ok = await ask('📤 보류→귀속월 발행처리 리스트 연동',
+        month + ' 귀속 「보류→귀속월 발행처리」 확정분만 엑셀업로드양식(A7:BG140)에 기록합니다.\n\n' +
+        '· 기록 후 시트에는 그 확정분만 보입니다 (임시 보기 상태).\n' +
+        '· 이 상태에서 시트 내용을 복사해 홈택스에 업로드하세요.\n' +
+        '· 임시 보기 중에는 [🔒 최종 발행종료 (월 마감)] 이 막힙니다.\n' +
+        '· 끝나면 반드시 [♻️ 원본 전체 재반영(원복)] 을 눌러 전체 데이터를 복원하세요.\n\n진행할까요?', '임시 기록');
+      if (!ok) return;
+      busyS(bView, true);
+      try {
+        var d = await window.api('hold_sheetview_v109', { month: month, includePrev: false });
+        logS(d.summary, 'ok'); toastS(d.summary, 'ok');
+        await showStatus();
+      } catch (e) { logS(e.message, 'err'); toastS(e.message, 'err'); }
+      busyS(bView, false, '📤 보류→귀속월 발행처리 리스트 연동');
+    };
+
+    bRestore.onclick = async function () {
+      var month = cm();
+      if (!/^\d{4}-\d{2}$/.test(month)) { toastS('먼저 상단 월 선택기에서 집계월(YYYY-MM)을 선택하세요.', 'warn'); return; }
+      var ok = await ask('♻️ 원본 전체 재반영(원복)',
+        '엑셀업로드양식(A7:BG140)을 ' + month + ' 전체 발행 데이터로 다시 기록해 원래대로 되돌립니다.\n' +
+        '(기존 [🔄 재반영] 과 완전히 같은 동작입니다.)\n\n진행할까요?', '원복');
+      if (!ok) return;
+      busyS(bRestore, true);
+      try {
+        var d = await window.api('hold_sheetview_restore_v109', { month: month });
+        logS(d.summary, 'ok'); toastS(d.summary, 'ok');
+        await showStatus();
+      } catch (e) { logS(e.message, 'err'); toastS(e.message, 'err'); }
+      busyS(bRestore, false, '♻️ 원본 전체 재반영(원복)');
+    };
+  }
+
+  /* --------------------------------------------------------------------
+   * 2) 임시 보기 상태 배너 (오른쪽 아래 고정 · 상태 폴링)
+   * ------------------------------------------------------------------ */
+  async function showStatus() {
+    try {
+      var d = await window.api('hold_sheetview_status_v109', {});
+      paintBanner(d);
+    } catch (e) {}
+  }
+  function paintBanner(d) {
+    var old = g('v109ViewBanner'); if (old) old.remove();
+    if (!d || !d.active || !d.view) return;
+    var b = document.createElement('div');
+    b.id = 'v109ViewBanner';
+    b.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:9999;max-width:430px;' +
+      'background:#FFF7E8;border:1.5px solid #F2CF8B;color:#7C2D12;border-radius:12px;' +
+      'padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.14);font-size:12.5px;line-height:1.55';
+    b.innerHTML = '<b style="font-size:13px">⚠️ 엑셀업로드양식 임시 보기 중</b><br>' +
+      esc(String(d.view.month)) + ' 귀속 「보류→귀속월 발행처리」 ' + esc(String(d.view.rows)) + '행 기록 (' + esc(String(d.view.at)) + ')<br>' +
+      '발행 ' + esc(fn(d.view.qty)) + '박스 / ' + esc(fw(d.view.base)) + '<br>' +
+      '<span style="color:#92400E">원복 전까지 [🔒 최종 발행종료 (월 마감)] 이 막힙니다.</span><br>' +
+      '<button class="btn btn-dark btn-sm" id="v109BannerRestore" type="button" ' +
+      'style="margin-top:8px;background:#1E5EFF;color:#fff;font-weight:800">♻️ 지금 원복</button>';
+    document.body.appendChild(b);
+    var rb = g('v109BannerRestore');
+    if (rb) rb.onclick = async function () {
+      busyS(rb, true);
+      try {
+        var d2 = await window.api('hold_sheetview_restore_v109', { month: String(d.view.month) });
+        toastS(d2.summary, 'ok'); logS(d2.summary, 'ok');
+        await showStatus();
+      } catch (e) { toastS(e.message, 'err'); logS(e.message, 'err'); }
+      busyS(rb, false, '♻️ 지금 원복');
+    };
+  }
+
+  /* --------------------------------------------------------------------
+   * 3) 사용 매뉴얼 — v10.9 섹션을 웹앱 매뉴얼에 덧붙임
+   * ------------------------------------------------------------------ */
+  function renderManualV109() {
+    if (g('manualV109') || !g('manualBody')) return;
+    window.api('manual_v109', {}).then(function (d) {
+      var body = g('manualBody');
+      if (!d || !d.v109 || !body || g('manualV109')) return;
+      var h = '<div id="manualV109">' +
+        '<h3 style="font-size:13.8px;margin:18px 0 8px">🆕 [v10.9] FINAL — 「보류→귀속월 발행처리 리스트 연동」</h3>';
+      d.v109.forEach(function (sec) {
+        h += '<div class="note info" style="margin:0 0 8px"><b>' + esc(sec.no) + '. ' + esc(sec.title) + '</b><ul>' +
+          (sec.items || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>';
+      });
+      h += '<div class="note warn" style="margin:10px 0 0"><b>⚠️ 임시 보기 3단계 규칙 (꼭 지키세요)</b><ol>' +
+        '<li>[📤 보류→귀속월 발행처리 리스트 연동] → 시트에 확정분만 보임 (임시 상태)</li>' +
+        '<li>시트 내용을 복사해 홈택스에 업로드</li>' +
+        '<li>반드시 [♻️ 원본 전체 재반영(원복)] → 전체 데이터 복원 확인 → 그 후 [🔒 최종 발행종료 (월 마감)]</li>' +
+        '</ol></div></div>';
+      body.insertAdjacentHTML('beforeend', h);
+    })['catch'](function () {});
+  }
+
+  /* --------------------------------------------------------------------
+   * 4) 부팅 / 감시
+   * ------------------------------------------------------------------ */
+  function bootV109() { try { ensureButtons(); } catch (e) {} }
+  bootV109();
+  [500, 1500, 3000, 6000].forEach(function (ms) { setTimeout(bootV109, ms); });
+  try {
+    new MutationObserver(function () { try { ensureButtons(); } catch (e) {} })
+      .observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
+  showStatus();
+  setInterval(showStatus, 60000);
+  try { var mEl = g('month'); if (mEl) mEl.addEventListener('change', function () { showStatus(); }); } catch (e) {}
+  setTimeout(renderManualV109, 5000);
+  try { if (g('manualBody')) new MutationObserver(function () { renderManualV109(); }).observe(g('manualBody'), { childList: true }); } catch (e) {}
 })();
 </script>
