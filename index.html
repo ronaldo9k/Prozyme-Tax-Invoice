@@ -251,6 +251,81 @@ tr.editing td{background:#FFF9E6!important}
   border-radius:9px; padding:6px 9px; margin-top:8px; font-weight:700}
 .hold-flag{display:inline-block; padding:1px 7px; border-radius:999px; font-size:10.5px; font-weight:850;
   background:#FFF1D6; color:#8A4B08; border:1px solid var(--warn-line)}
+
+<style id="v1012css">
+/* ============ [v10.12] 추가 CSS (기존 규칙은 단 1개도 수정하지 않음) ============ */
+/* 상단 툴바를 2줄로 — #topToolbar 안에서만 적용 (기존 flex 그대로 사용) */
+#topToolbar{padding:9px 11px}
+#topToolbar .tb-sep{flex-basis:100%; width:100%; height:0; margin:9px 0 0; border:0;
+  border-top:1px dashed var(--line-2); background:none}
+
+/* 핵심 3버튼 — 크게 + 진한 네이비 */
+.btn.btn-core{font-family:inherit;font-size:13.2px;font-weight:900;letter-spacing:-.02em;cursor:pointer;
+  padding:11px 17px;border-radius:11px;border:1px solid #0B1B33;
+  background:linear-gradient(160deg,#12294A,#0B1B33);color:#fff;
+  box-shadow:0 10px 20px -14px rgba(11,27,51,.95), inset 0 1px 0 rgba(255,255,255,.14);
+  display:inline-flex;align-items:center;gap:7px;transition:all .16s}
+.btn.btn-core:hover{filter:brightness(1.16);transform:translateY(-1px)}
+.btn.btn-core:disabled{opacity:.6;transform:none}
+
+#btnV10RefreshAll{font-family:inherit;font-size:13.2px;font-weight:900;letter-spacing:-.02em;cursor:pointer;
+  padding:11px 17px;border-radius:11px;border:1px solid #1D4ED8;background:linear-gradient(160deg,#1E5EFF,#1D4ED8);
+  color:#fff;box-shadow:0 10px 20px -14px rgba(29,78,216,.95), inset 0 1px 0 rgba(255,255,255,.2);
+  display:inline-flex;align-items:center;gap:7px;transition:all .16s}
+#btnV10RefreshAll:hover{filter:brightness(1.1);transform:translateY(-1px)}
+#btnV10RefreshAll:disabled{opacity:.6;transform:none}
+
+/* 📌 예외발행 거래처 — 노란색으로 가장 눈에 띄게 */
+.btn.btn-xc{font-family:inherit;font-size:13.4px;font-weight:900;letter-spacing:-.02em;cursor:pointer;
+  padding:11px 18px;border-radius:11px;border:1px solid #B45309;
+  background:linear-gradient(160deg,#FFF3D6,#FFE0A3);color:#7C3A06;
+  box-shadow:0 10px 22px -14px rgba(180,83,9,.9), inset 0 1px 0 #fff;transition:all .16s}
+.btn.btn-xc:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.btn.btn-xc .xc-n{display:inline-block;min-width:18px;text-align:center;font-weight:900;
+  background:#B45309;color:#FFF7E8;border-radius:999px;padding:0 6px;font-size:11px}
+
+/* 사용 매뉴얼 — 나머지 단계 버튼과 같은 크기·색 */
+.navbtn2{font-family:inherit;font-size:11.8px;font-weight:800;letter-spacing:-.01em;cursor:pointer;
+  padding:7px 11px;border-radius:9px;border:1px solid var(--line-2);background:#fff;color:var(--ink-2);
+  display:inline-flex;align-items:center;gap:5px;transition:all .16s}
+.navbtn2:hover{border-color:#94A3B8;background:#F8FAFD}
+
+/* 예외발행 거래처 관리 화면 */
+.xcp-page{display:none}
+.xcp-page.on{display:block;position:fixed;inset:0;z-index:145;background:#F5F7FB;overflow:auto}
+.xcp-in{max-width:1240px;margin:0 auto;padding:16px 16px 90px}
+.xcp-hd{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  background:linear-gradient(180deg,#FFFDF6,#FFF4DD);border:1px solid #F2CF8B;border-radius:13px;
+  padding:12px 14px;margin-bottom:14px;box-shadow:0 10px 26px -22px rgba(15,23,42,.8)}
+.xcp-hd h2{margin:0;font-size:15.5px;font-weight:900;color:#7C3A06}
+.xcp-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin-bottom:14px;
+  box-shadow:0 14px 30px -28px rgba(15,23,42,.85)}
+.xcp-card h3{margin:0 0 8px;font-size:13.2px;font-weight:900;color:#0B1B33;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.xcp-card p.sub{margin:0 0 10px;font-size:12px;color:#475569;line-height:1.75}
+.xcp-grid{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.xcp-grid input[type=text],.xcp-grid select,.xcp-grid textarea{font-family:inherit;font-size:12.3px;
+  padding:8px 10px;border-radius:9px;border:1px solid var(--line-2);background:#fff}
+.xcp-grid input[type=text]{min-width:190px;flex:1 1 190px}
+.xcp-grid select{min-width:300px;flex:1 1 300px;font-weight:800}
+.xcp-grid textarea{width:100%;min-height:54px;resize:vertical}
+.xcp-wide{width:100%;margin-top:8px}
+.xcp-tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.xcp-tbl table{width:100%;border-collapse:collapse;font-size:12px}
+.xcp-tbl th{background:#F1F5F9;color:#334155;font-weight:900;padding:8px 9px;white-space:nowrap;
+  border-bottom:1px solid var(--line);text-align:left}
+.xcp-tbl td{padding:7px 9px;border-bottom:1px solid #F1F5F9;vertical-align:top}
+.xcp-tbl tr:last-child td{border-bottom:none}
+.xcp-tbl tr.off td{opacity:.5}
+.xcp-tbl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.xcp-tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:900;
+  background:#FFF1D6;color:#8A4B08;border:1px solid #F2CF8B;white-space:nowrap}
+.xcp-tag.b{background:#EEF4FF;color:#1D4ED8;border-color:#BFD3FF}
+
+/* ★ 다른 리스트에서 '예외발행 거래처' 행만 노란 음영 — 보여주기 전용(계산에 관여 없음) */
+tr.xc-hit>td{background:#FFF8E1 !important}
+tr.xc-hit>td.xc-cell{box-shadow:inset 3px 0 0 #F59E0B;font-weight:900;color:#8A4B08}
+td.xc-cell::after{content:" 📌";font-size:10.5px;font-weight:900;color:#B45309}
+</style>
 </style>
 </head>
 <body>
@@ -277,16 +352,19 @@ tr.editing td{background:#FFF9E6!important}
 
   <!-- ===================== [v6.0] 상단 컨트롤 바 (추가) ===================== -->
   <div class="toolbar" id="topToolbar">
-    <button class="btn btn-ghost btn-sm" id="btnManualOpen" type="button">📘 사용 매뉴얼</button>
-    <button class="btn btn-ghost btn-sm" id="btnSheetOpen" type="button">📊 컨트롤타워 시트 열기</button>
-    <button class="btn btn-ghost btn-sm" id="btnCollapseTop" type="button">모두 접기 / 펼치기</button>
+    <!-- [v10.12] 1줄: 핵심 기능 (크게 · 진한 색) -->
+    <button class="btn btn-xc" id="btnExcReg" type="button">📌 예외발행 거래처 <span class="xc-n" id="btnExcRegN">0</span></button>
+    <button class="btn btn-core" id="btnSheetOpen" type="button">📊 컨트롤타워 시트 열기</button>
+    <button class="btn btn-core" id="btnCollapseTop" type="button">모두 접기 / 펼치기</button>
     <div class="tb-sep"></div>
+    <!-- [v10.12] 2줄: 단계 이동 6개 + 사용 매뉴얼(맨 끝) -->
     <button class="navbtn" type="button" data-goto="0"><i>0</i> 출고 스냅샷</button>
     <button class="navbtn" type="button" data-goto="1"><i>1</i> 세금계산서 DB</button>
     <button class="navbtn" type="button" data-goto="2"><i>2</i> 엑셀 초안</button>
     <button class="navbtn" type="button" data-goto="E"><i>E</i> 예외 처리</button>
     <button class="navbtn" type="button" data-goto="3"><i>3</i> 최종 발행</button>
     <button class="navbtn" type="button" data-goto="R"><i>R</i> 발행률 리포트</button>
+    <button class="navbtn2" id="btnManualOpen" type="button">📘 사용 매뉴얼</button>
   </div>
 
   <!-- [v9.9] 사용 매뉴얼 (v6.0: 상단 버튼으로 여는 전용 화면) -->
@@ -584,7 +662,7 @@ tr.editing td{background:#FFF9E6!important}
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxXVObiLJZzU6WI0n-h3VXs9wlW12I_WtuHyqxYm4H_uABRGsXk69NgSC4qnm0z7mjw/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx3Nk5eHS14D10W8OhAc7zzh9SVrs2Zy81h-aiZHc5_psVHF4GFmcbBJRYQlHfMzlyK/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3226,6 +3304,7 @@ loadExceptions(true);
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html><script>
 /* =====================================================================
@@ -5144,7 +5223,30 @@ loadExceptions(true);
       box.innerHTML = head + '<br>상황2 · 금액만 입력 → 수량 자동 = ' + fw(av) + ' ÷ ' + fw(price) +
         ' = ' + fn(av / price) + ' → <b>' + fn(Math.floor(av / price)) + '박스</b> (소수점 첫째자리에서 내림)';
     } else if (rv !== null) {
-      box.innerHTML = head + '<br>비율 <b>' + esc(rv) + '</b> 입력 — 비율 계산식은 기존과 동일합니다.';
+      /* [v10.12 FIX] 발행비율을 넣으면 '실제 발행 박스 / 발행 금액' 계산값을 이 칸에 표시합니다.
+         (계산만 표시 · 값은 그대로 두므로 사용자가 언제든 수정 가능) */
+      var _rr12 = (function (v) {
+        var s = String(v === null || v === undefined ? '' : v).trim();
+        if (!s) return null;
+        var m = s.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+        if (m) { var dd = Number(m[2]); if (!dd || dd < 0) return null; return Number(m[1]) / dd; }
+        var n = Number(s.replace(/[,\s%]/g, ''));
+        if (isNaN(n)) return null;
+        return n > 1 ? n / 100 : n;
+      })(rv);
+      if (_rr12 === null) {
+        box.innerHTML = head + '<br>⚠ 비율 형식을 확인하세요 — 예: 2/3, 1/4, 0.6667, 66%';
+      } else {
+        var _bq12 = n0(u.qty), _ba12 = n0(u.amount);
+        var _q12 = Math.floor(_bq12 * _rr12);
+        var _a12 = price ? Math.floor(_q12 * price) : Math.floor(_ba12 * _rr12);
+        box.innerHTML = head +
+          '<br><b>비율 ' + esc(rv) + '</b> 적용 → 실제 발행 <b>' + fn(_q12) + '박스</b> / <b>' + fw(_a12) + '</b>' +
+          '<br><span style="color:#33507A">발행수량 = 출고박스 ' + fn(_bq12) + ' × ' + esc(rv) + ' = ' + fn(_bq12 * _rr12) + ' → <b>' + fn(_q12) + '</b> (버림)' +
+          '<br>발행금액 = ' + fn(_q12) + '박스 × 단가 ' + fw(price) + ' = <b>' + fw(_a12) + '</b>' +
+          '<br>(참고) 출고금액 ' + fw(_ba12) + ' × ' + esc(rv) + ' = ' + fw(_ba12 * _rr12) + ' → <b>' + fw(Math.floor(_ba12 * _rr12)) + '</b>' +
+          '<br>※ 위 값은 참고용 계산입니다. 필요하면 [발행수량]·[발행금액] 칸에 직접 고쳐 넣으세요.</span>';
+      }
     } else {
       box.innerHTML = head + '<br>발행수량 · 발행금액 · 발행비율 중 <b>하나만</b> 넣어도 나머지를 자동으로 계산합니다.';
     }
@@ -6911,3 +7013,559 @@ loadExceptions(true);
   } catch (e) {}
 })();
 </script>
+
+<!-- ============================================================================
+     [v10.12] 예외발행 거래처 (ADD-ONLY · 기존 화면/스크립트는 한 줄도 삭제·수정하지 않음)
+     ----------------------------------------------------------------------------
+      ① 상단 버튼 [📌 예외발행 거래처] → 전체 화면 관리 창(등록/수정/삭제)
+      ② 등록된 거래처는 웹앱 여러 리스트에서 '노란 음영 + 📌' 로만 구분 표시
+      ③ [① 패널에 채우기] → 기존 ① 계산서 수정발행 입력칸에 값만 미리 채움
+         (자동 등록 절대 없음 · 반드시 사용자가 [예외 등록]을 눌러야 반영)
+============================================================================= -->
+<script>
+(function () {
+  'use strict';
+  if (window.__v1012Loaded) return;
+  window.__v1012Loaded = true;
+
+  /* ---------------- 공통 ---------------- */
+  function g(id) { return document.getElementById(id); }
+  function qa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fnum(v) { if (v === '' || v === null || v === undefined) return '-'; return (Math.round(Number(v) * 100) / 100).toLocaleString('ko-KR'); }
+  function fwon(v) { if (v === '' || v === null || v === undefined) return '-'; return (Math.round(Number(v) || 0)).toLocaleString('ko-KR') + '원'; }
+  function cm() { var m = g('month'); return m ? m.value : ''; }
+  function toastS(m, k) { try { toast(m, k); } catch (e) {} }
+  function logS(m, k) { try { log(m, k); } catch (e) {} }
+  function busyS(b, on, lb) { try { busy(b, on, lb); } catch (e) {} }
+
+  /* 비율 파서 — 서버(parseFractionV10_)와 같은 규칙: 2/3, 1/4, 0.6667, 66%, 66 */
+  window.fracV1012_ = function (v) {
+    if (v === null || v === undefined) return null;
+    var s = String(v).trim();
+    if (!s) return null;
+    var m = s.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+    if (m) { var d = Number(m[2]); if (!d || d < 0) return null; return Number(m[1]) / d; }
+    var n = Number(s.replace(/[,\s%]/g, ''));
+    if (isNaN(n)) return null;
+    return n > 1 ? n / 100 : n;
+  };
+
+  var TYPES = [
+    { t: 'HOLD',            l: '① 발행보류 (귀속월 발행처리)' },
+    { t: 'EXCLUDE_CLIENT',  l: '② 거래처 전체 제외' },
+    { t: 'SET_EXACT',       l: '③ 거래처 수정발행 (발행비율)' },
+    { t: 'ISSUED_ALREADY',  l: '④ 기발행완료 (납품건별 제외)' }
+  ];
+  function typeLabel(t) {
+    for (var i = 0; i < TYPES.length; i++) if (TYPES[i].t === t) return TYPES[i].l;
+    return t || '-';
+  }
+  function norm(s) {
+    return String(s === null || s === undefined ? '' : s).toLowerCase()
+      .replace(/주식회사|유한회사|\(주\)|\(유\)|㈜/g, '').replace(/[^0-9a-z가-힣]/g, '');
+  }
+
+  var XC = { items: [], dir: [], loaded: false, editId: '', busy: false };
+
+  /* ============================ 화면 골격 ============================ */
+  function buildPage() {
+    if (g('xcPage')) return;
+    var sec = document.createElement('section');
+    sec.className = 'xcp-page';
+    sec.id = 'xcPage';
+    sec.innerHTML =
+      '<div class="xcp-in">' +
+        '<div class="xcp-hd">' +
+          '<h2>📌 예외발행 거래처 <span class="xcp-tag">등록 · 수정 · 삭제</span></h2>' +
+          '<span class="hint" style="margin:0">세금계산서 발행에 업체별 특이사항이 있는 거래처를 적어두는 <b>명단</b>입니다. ' +
+            '이 명단은 <b>계산에 전혀 개입하지 않고</b>, 등록된 거래처를 여러 리스트에서 <b>노란색</b>으로 구분해 보여주기만 합니다.</span>' +
+          '<button class="btn btn-ghost btn-sm" type="button" id="xcClose" style="margin-left:auto">닫기 ✕</button>' +
+        '</div>' +
+
+        '<div class="xcp-card">' +
+          '<h3>① 거래처 등록 / 수정 <span class="xcp-tag b" id="xcEditTag">새로 등록</span></h3>' +
+          '<p class="sub">거래처명을 검색하면 <b>노션 거래처 DB 전체</b>에서 찾아줍니다. 유형을 고르고 [저장]을 누르면 명단에 저장됩니다. ' +
+            '(같은 거래처를 다시 저장하면 새 줄이 생기지 않고 그 줄이 갱신됩니다)</p>' +
+          '<div class="xcp-grid">' +
+            '<input type="text" id="xcName" list="xcDirList" placeholder="거래처명 검색 (예: ○○식품)">' +
+            '<datalist id="xcDirList"></datalist>' +
+            '<select id="xcType">' +
+              TYPES.map(function (x) { return '<option value="' + x.t + '">' + esc(x.l) + '</option>'; }).join('') +
+            '</select>' +
+            '<input type="text" id="xcRatio" placeholder="발행비율 (③ 선택 시 · 예: 2/3, 0.6667)" style="max-width:260px">' +
+            '<label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#334155">' +
+              '<input type="checkbox" id="xcActive" checked> 사용' +
+            '</label>' +
+            '<button class="btn btn-primary" type="button" id="xcSave">저장</button>' +
+            '<button class="btn btn-ghost" type="button" id="xcReset">입력 초기화</button>' +
+          '</div>' +
+          '<div class="xcp-wide"><textarea id="xcIssue" placeholder="이슈 내용 (예: 매월 10일 이후 확정 통보 · 발행일 조정 필요)"></textarea></div>' +
+          '<div class="xcp-wide"><textarea id="xcReason" placeholder="사유 (예: 본사 전산 마감일이 늦음)"></textarea></div>' +
+        '</div>' +
+
+        '<div class="xcp-card">' +
+          '<h3>② 등록된 예외발행 거래처 <span class="xcp-tag" id="xcCount">0곳</span></h3>' +
+          '<div class="xcp-grid" style="margin-bottom:9px">' +
+            '<input type="text" id="xcFilter" placeholder="명단에서 검색" style="max-width:260px">' +
+            '<button class="btn btn-ghost btn-sm" type="button" id="xcReload">🔄 새로고침</button>' +
+            '<span class="hint" style="margin:0">[① 패널에 채우기]는 ① 계산서 수정발행 입력칸에 <b>값만 미리 채워</b> 줍니다. ' +
+              '반드시 값 확인·수정 후 사용자가 [예외 등록]을 눌러야 이번 달에 반영됩니다.</span>' +
+          '</div>' +
+          '<div class="xcp-tbl" id="xcList"><table><thead><tr>' +
+            '<th>No.</th><th>거래처</th><th>사업자번호</th><th>유형</th><th>발행비율</th>' +
+            '<th>이슈 내용</th><th>사유</th><th>사용</th><th>관리</th>' +
+          '</tr></thead><tbody><tr><td colspan="9" style="text-align:center;color:#64748B;padding:18px">불러오는 중…</td></tr></tbody></table></div>' +
+        '</div>' +
+
+        '<div class="xcp-card" style="border-color:#F2CF8B;background:#FFFDF6">' +
+          '<h3>③ 이 명단이 하는 일 / 하지 않는 일</h3>' +
+          '<p class="sub" style="margin:0">' +
+            '<b>하는 일</b> : ① 등록한 거래처명을 <b>0 출고 스냅샷 · 1 세금계산서 DB · 2 엑셀 초안 · E 예외 처리 · 3 최종 발행</b> 리스트에서 ' +
+            '<b>노란 음영 + 📌</b> 로 구분 표시 → 매달 누락·실수 방지.<br>' +
+            '<b>하는 일</b> : [① 패널에 채우기]로 ① 계산서 수정발행 칸에 유형·발행비율·계산된 박스/금액을 <b>미리 채움</b>(수정 가능).<br>' +
+            '<b class="amt">하지 않는 일</b> : 자동 등록·자동 제외·자동 발행 없음. 📌 고정 거래처(거래처 전체 제외) 목록과도 <b>분리</b>되어 서로 영향을 주지 않습니다.' +
+          '</p>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(sec);
+    g('xcClose').onclick = closePage;
+    g('xcSave').onclick = function () { saveItem(this); };
+    g('xcReset').onclick = resetForm;
+    g('xcReload').onclick = function () { loadAll(true); };
+    g('xcFilter').oninput = renderList;
+    g('xcType').onchange = function () {
+      var isExact = this.value === 'SET_EXACT';
+      g('xcRatio').disabled = !isExact;
+      if (!isExact) g('xcRatio').value = '';
+      g('xcRatio').placeholder = isExact ? '발행비율 (예: 2/3, 0.6667)' : '③ 유형에서만 사용';
+    };
+    g('xcRatio').disabled = false;
+    document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closePage(); });
+  }
+
+  function openPage() {
+    buildPage();
+    g('xcPage').classList.add('on');
+    document.body.style.overflow = 'hidden';
+    loadAll(true);
+  }
+  function closePage() {
+    var p = g('xcPage'); if (!p) return;
+    p.classList.remove('on');
+    document.body.style.overflow = '';
+  }
+  function resetForm() {
+    XC.editId = '';
+    if (g('xcName')) g('xcName').value = '';
+    if (g('xcType')) g('xcType').value = 'SET_EXACT';
+    if (g('xcRatio')) { g('xcRatio').value = ''; g('xcRatio').disabled = false; }
+    if (g('xcIssue')) g('xcIssue').value = '';
+    if (g('xcReason')) g('xcReason').value = '';
+    if (g('xcActive')) g('xcActive').checked = true;
+    if (g('xcEditTag')) g('xcEditTag').textContent = '새로 등록';
+  }
+
+  /* ============================ 데이터 ============================ */
+  async function loadAll(force) {
+    try {
+      var d = await api('exc_client_list_v1012', { month: cm() });
+      XC.items = (d && d.items) || [];
+      XC.loaded = true;
+      renderList();
+      markAll();
+      updateBadge();
+      if (force) loadDir();
+    } catch (e) {
+      var box = g('xcList');
+      if (box) box.innerHTML = '<div class="note err" style="margin:10px">명단을 읽지 못했습니다: ' + esc(e.message) + '</div>';
+    }
+  }
+
+  async function loadDir() {
+    try {
+      var d = await api('exc_dir_v1012', {});
+      var names = {};
+      XC.dir = [];
+      ((d && d.clients) || []).forEach(function (c) {
+        if (!c || !c.name || names[c.name]) return;
+        names[c.name] = 1; XC.dir.push(c);
+      });
+      /* 이번 달 출고 거래처(입출고 DB 거래처명 롤업)도 함께 후보로 */
+      try {
+        var cl = await api('client_list', { month: cm() });
+        ((cl && cl.clients) || []).forEach(function (c) {
+          if (c && c.client && !names[c.client]) { names[c.client] = 1; XC.dir.push({ name: c.client, regNo: c.regNo || '' }); }
+        });
+      } catch (e2) {}
+      var dl = g('xcDirList');
+      if (dl) dl.innerHTML = XC.dir.map(function (c) {
+        return '<option value="' + esc(c.name) + '">' + esc(c.name + (c.regNo ? ' · ' + c.regNo : '')) + '</option>';
+      }).join('');
+    } catch (e) {}
+  }
+
+  function updateBadge() {
+    var n = XC.items.filter(function (x) { return x.active; }).length;
+    var b = g('btnExcRegN'); if (b) b.textContent = n;
+    var c = g('xcCount'); if (c) c.textContent = n + '곳 사용 / 전체 ' + XC.items.length + '곳';
+  }
+
+  function renderList() {
+    var host = g('xcList'); if (!host) return;
+    var q = (g('xcFilter') && g('xcFilter').value || '').trim().toLowerCase();
+    var rows = XC.items.filter(function (x) {
+      if (!q) return true;
+      return (String(x.clientName) + ' ' + String(x.bizNo) + ' ' + String(x.issue) + ' ' + String(x.reason)).toLowerCase().indexOf(q) >= 0;
+    });
+    var tb = rows.length ? rows.map(function (x, i) {
+      return '<tr class="' + (x.active ? '' : 'off') + '">' +
+        '<td class="num">' + (i + 1) + '</td>' +
+        '<td><b>' + esc(x.clientName) + '</b> 📌</td>' +
+        '<td>' + (x.bizNo ? esc(x.bizNo) : '-') + '</td>' +
+        '<td><span class="xcp-tag">' + esc(typeLabel(x.type)) + '</span></td>' +
+        '<td class="num">' + (x.ratioRaw ? esc(x.ratioRaw) : '-') + '</td>' +
+        '<td>' + esc(x.issue || '-') + '</td>' +
+        '<td>' + esc(x.reason || '-') + '</td>' +
+        '<td>' + (x.active ? '사용' : '미사용') + '</td>' +
+        '<td style="white-space:nowrap">' +
+          '<button class="btn btn-ghost btn-sm" type="button" data-xc-edit="' + esc(x.id) + '">✎ 수정</button> ' +
+          '<button class="btn btn-primary btn-sm" type="button" data-xc-fill="' + esc(x.id) + '">① 패널에 채우기</button> ' +
+          '<button class="btn btn-danger btn-sm" type="button" data-xc-del="' + esc(x.id) + '">삭제</button>' +
+        '</td></tr>';
+    }).join('') : '<tr><td colspan="9" style="text-align:center;color:#64748B;padding:18px">등록된 예외발행 거래처가 없습니다. 위에서 거래처를 검색해 추가하세요.</td></tr>';
+    host.innerHTML = '<table><thead><tr><th>No.</th><th>거래처</th><th>사업자번호</th><th>유형</th><th>발행비율</th>' +
+      '<th>이슈 내용</th><th>사유</th><th>사용</th><th>관리</th></tr></thead><tbody>' + tb + '</tbody></table>';
+
+    qa('[data-xc-edit]', host).forEach(function (b) {
+      b.onclick = function () { startEdit(b.getAttribute('data-xc-edit')); };
+    });
+    qa('[data-xc-fill]', host).forEach(function (b) {
+      b.onclick = function () { fillPanel(b.getAttribute('data-xc-fill'), b); };
+    });
+    qa('[data-xc-del]', host).forEach(function (b) {
+      b.onclick = function () { delItem(b.getAttribute('data-xc-del'), b); };
+    });
+  }
+
+  function startEdit(id) {
+    var it = XC.items.filter(function (x) { return String(x.id) === String(id); })[0];
+    if (!it) return;
+    XC.editId = it.id;
+    g('xcName').value = it.clientName || '';
+    g('xcType').value = it.type || 'SET_EXACT';
+    g('xcRatio').value = it.ratioRaw || '';
+    g('xcRatio').disabled = (g('xcType').value !== 'SET_EXACT');
+    g('xcIssue').value = it.issue || '';
+    g('xcReason').value = it.reason || '';
+    g('xcActive').checked = !!it.active;
+    g('xcEditTag').textContent = '수정 중 — ' + it.clientName;
+    try { g('xcPage').scrollTop = 0; g('xcName').focus(); } catch (e) {}
+  }
+
+  async function saveItem(btn) {
+    if (XC.busy) return;
+    var name = (g('xcName').value || '').trim();
+    if (!name) { toastS('거래처명을 입력하세요.', 'err'); g('xcName').focus(); return; }
+    var type = g('xcType').value;
+    var ratio = (g('xcRatio').value || '').trim();
+    if (type === 'SET_EXACT' && ratio && window.fracV1012_(ratio) === null) {
+      toastS('발행비율 형식을 확인하세요. (예: 2/3, 0.6667, 66%)', 'err'); return;
+    }
+    XC.busy = true; busyS(btn, true);
+    try {
+      var hit = XC.dir.filter(function (c) { return norm(c.name) === norm(name); })[0];
+      var d = await api('exc_client_save_v1012', {
+        id: XC.editId || '',
+        clientName: name,
+        bizNo: hit ? (hit.regNo || '') : '',
+        type: type,
+        ratio: ratio,
+        issue: (g('xcIssue').value || ''),
+        reason: (g('xcReason').value || ''),
+        active: !!g('xcActive').checked
+      });
+      XC.items = d.items || [];
+      renderList(); markAll(); updateBadge(); resetForm();
+      toastS(d.summary || '저장 완료', 'ok'); logS(d.summary || '저장 완료', 'ok');
+    } catch (e) {
+      toastS(e.message, 'err'); logS(e.message, 'err');
+    }
+    XC.busy = false; busyS(btn, false, '저장');
+  }
+
+  async function delItem(id, btn) {
+    var it = XC.items.filter(function (x) { return String(x.id) === String(id); })[0];
+    var nm = it ? it.clientName : id;
+    var ok = false;
+    try { ok = await confirmBox('예외발행 거래처 삭제', '“' + nm + '” 를 명단에서 삭제합니다.\n\n· 세금계산서 계산·예외 등록·고정 거래처와는 무관합니다.\n· 이 명단에서만 사라집니다.\n\n삭제할까요?', '삭제'); }
+    catch (e) { ok = window.confirm('“' + nm + '” 를 명단에서 삭제할까요?'); }
+    if (!ok) return;
+    busyS(btn, true);
+    try {
+      var d = await api('exc_client_delete_v1012', { id: id });
+      XC.items = (d && d.items) || [];
+      renderList(); markAll(); updateBadge();
+      toastS((d && d.summary) || '삭제 완료', 'ok');
+    } catch (e) { toastS(e.message, 'err'); }
+    busyS(btn, false, '삭제');
+  }
+
+  /* ================= ① 계산서 수정발행 패널에 '값만' 채우기 ================= */
+  async function baseOf(name) {
+    try {
+      var d = await api('client_list', { month: cm() });
+      var rows = (d && d.clients) || [];
+      for (var i = 0; i < rows.length; i++) if (rows[i].client === name) return rows[i];
+    } catch (e) {}
+    return null;
+  }
+
+  async function fillPanel(id, btn) {
+    var it = XC.items.filter(function (x) { return String(x.id) === String(id); })[0];
+    if (!it) return;
+    var cli = g('v10Client'), ty = g('v10Type'), rq = g('v10Qty'), ra = g('v10Amt'), rr = g('v10Ratio'), rs = g('v10Reason');
+    if (!cli || !ty) { toastS('① 계산서 수정발행 패널을 찾지 못했습니다. 화면을 새로고침한 뒤 다시 시도하세요.', 'err'); return; }
+    busyS(btn, true);
+    cli.value = it.clientName;
+    ty.value = (it.type === 'HOLD' || it.type === 'EXCLUDE_CLIENT' || it.type === 'ISSUED_ALREADY') ? it.type : 'SET_EXACT';
+    rr.value = it.ratioRaw || '';
+    if (rs && !rs.value) rs.value = it.reason || it.issue || '';
+    rq.value = ''; ra.value = '';
+    if (ty.value === 'SET_EXACT' && it.ratio) {
+      var b = await baseOf(it.clientName);
+      if (b) {
+        rq.value = Math.floor(Number(b.qty || 0) * it.ratio);
+        ra.value = Math.floor(Number(b.amount || 0) * it.ratio);
+      }
+    }
+    ['input', 'change'].forEach(function (ev) {
+      try { cli.dispatchEvent(new Event(ev)); ty.dispatchEvent(new Event(ev)); rr.dispatchEvent(new Event(ev)); } catch (e) {}
+    });
+    busyS(btn, false, '① 패널에 채우기');
+    closePage();
+    var panel = g('v10ExactPanel');
+    if (panel) { try { panel.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { panel.scrollIntoView(); } }
+    toastS('① 계산서 수정발행 칸에 채웠습니다 — 값 확인/수정 후 [예외 등록]을 누르세요. (자동 등록 아님)', 'ok');
+    logS('[예외발행 거래처] ① 패널 채우기 — ' + it.clientName + ' / ' + typeLabel(it.type), 'ok');
+  }
+
+  /* ============ 리스트에서 '노란 음영 + 📌' 로만 구분 표시 (계산 무관) ============ */
+  var HOSTS = ['snapOut', 's1Out', 's2Out', 'exOut', 's3Out'];
+  function markAll() {
+    var active = XC.items.filter(function (x) { return x.active; });
+    var byName = {};
+    active.forEach(function (x) { byName[norm(x.clientName)] = x.clientName; });
+    HOSTS.forEach(function (hid) {
+      var host = g(hid);
+      if (!host) return;
+      qa('table tr', host).forEach(function (tr) {
+        var tds = tr.children;
+        if (!tds || tds.length < 3) return;
+        var hitTd = null;
+        for (var i = 0; i < tds.length; i++) {
+          var t = String(tds[i].textContent || '').replace(/\s*📌\s*/g, '').trim();
+          if (!t) continue;
+          if (byName[norm(t)] !== undefined && norm(t).length > 1) { hitTd = tds[i]; break; }
+        }
+        if (hitTd) {
+          tr.classList.add('xc-hit');
+          hitTd.classList.add('xc-cell');
+          tr.setAttribute('data-xc-hit', '1');
+        } else if (tr.getAttribute('data-xc-hit')) {
+          tr.classList.remove('xc-hit');
+          tr.removeAttribute('data-xc-hit');
+          qa('td.xc-cell', tr).forEach(function (td) { td.classList.remove('xc-cell'); });
+        }
+      });
+    });
+  }
+  var _mkT = null;
+  function markSoon() { clearTimeout(_mkT); _mkT = setTimeout(markAll, 220); }
+
+  function hookObservers() {
+    HOSTS.forEach(function (hid) {
+      var host = g(hid);
+      if (!host) return;
+      try { new MutationObserver(markSoon).observe(host, { childList: true, subtree: true }); } catch (e) {}
+    });
+    var mEl = g('month');
+    if (mEl) mEl.addEventListener('change', function () { markSoon(); });
+  }
+
+  /* ============================ 시작 ============================ */
+  function boot() {
+    var b = g('btnExcReg');
+    if (b) b.onclick = function (ev) { ev.preventDefault(); openPage(); };
+    hookObservers();
+    /* 예외발행 거래처 수는 화면 표시용 — 조용히 한 번만 읽어옵니다 */
+    setTimeout(function () {
+      api('exc_client_list_v1012', { month: cm() }).then(function (d) {
+        XC.items = (d && d.items) || []; XC.loaded = true; updateBadge(); markAll();
+      }).catch(function () {});
+    }, 1600);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  [600, 2000, 5000].forEach(function (ms) { setTimeout(function () { if (XC.items.length) markAll(); }, ms); });
+})();
+</script>
+
+
+<!-- ============================================================================
+     [v10.12] 사용 매뉴얼 — 집대성 & 프레쉬 버전 (ADD-ONLY)
+      · 기존 manualBody 안에 '맨 위'로 1회 삽입합니다(기존 매뉴얼 내용은 그대로 아래에 유지)
+      · 노션 업로드용과 같은 내용을 담았습니다(파일: 세금계산서_컨트롤타워_사용매뉴얼_v10.12.md)
+============================================================================= -->
+<script>
+(function () {
+  'use strict';
+  if (window.__v1012Manual) return;
+  window.__v1012Manual = true;
+
+  function g(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  var CSS =
+    '.m12{border:2px solid #0B1B33;border-radius:14px;background:#FBFCFE;padding:14px 16px;margin:0 0 18px}' +
+    '.m12>.m12-vis{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}' +
+    '.m12 .m12-ver{font-size:11px;font-weight:900;padding:2px 9px;border-radius:999px;background:#0B1B33;color:#fff}' +
+    '.m12 .m12-new{font-size:11px;font-weight:900;padding:2px 9px;border-radius:999px;background:#FFF1D6;color:#8A4B08;border:1px solid #F2CF8B}' +
+    '.m12 h4{margin:14px 0 6px;font-size:13px;font-weight:900;color:#0B1B33;border-left:4px solid #1E5EFF;padding-left:8px}' +
+    '.m12 p{margin:0 0 8px;font-size:12.2px;color:#334155;line-height:1.78}' +
+    '.m12 table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0 10px}' +
+    '.m12 th{background:#F1F5F9;color:#334155;font-weight:900;padding:7px 9px;border:1px solid #E2E8F0;text-align:left;white-space:nowrap}' +
+    '.m12 td{padding:7px 9px;border:1px solid #E2E8F0;vertical-align:top;line-height:1.72}' +
+    '.m12 ol,.m12 ul{margin:6px 0 10px 18px;padding:0;font-size:12.2px;color:#334155;line-height:1.85}' +
+    '.m12 code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#EEF2F7;border-radius:4px;padding:1px 5px}' +
+    '.m12 .m12-warn{background:#FFF7E8;border:1px solid #F2CF8B;border-radius:10px;padding:9px 11px;font-size:12px;color:#7C3A06;font-weight:700;line-height:1.75}' +
+    '.m12 .m12-ok{background:#E9F7EF;border:1px solid #A7E0BF;border-radius:10px;padding:9px 11px;font-size:12px;color:#0F5E30;font-weight:700;line-height:1.75}';
+
+  function build() {
+    var h = '';
+    h += '<div class="m12" id="m12Root">';
+    h += '  <div class="m12-vis"><span class="m12-ver">v10.12 FINAL</span>';
+    h += '    <span class="m12-new">📌 예외발행 거래처 추가</span>';
+    h += '    <span class="m12-new">상단 버튼 2줄 정리</span>';
+    h += '    <span class="m12-new">발행비율 계산값 표시</span>';
+    h += '    <b style="font-size:13px;color:#0B1B33">사용 매뉴얼 (집대성 · 최종)</b></div>';
+
+    h += '  <p>이 매뉴얼 한 장이면 끝납니다. <b>월 1회, 아래 6단계 순서</b>만 지키면 세금계산서 발행이 완료됩니다. ' +
+         '각 단계는 앞 단계가 끝나야 의미가 있으므로 <b>반드시 0 → 1 → 2 → E → 3 → R 순서</b>로 진행하세요.</p>';
+
+    h += '  <h4>0. 한눈에 보는 전체 흐름</h4>';
+    h += '  <table><thead><tr><th>단계</th><th>버튼</th><th>하는 일</th><th>끝났는지 확인하는 법</th></tr></thead><tbody>';
+    h += '    <tr><td>준비</td><td>집계월 선택</td><td>이번 달 업무 기준월을 고릅니다.</td><td>상단 우측 집계월 값</td></tr>';
+    h += '    <tr><td>0</td><td>출고 스냅샷</td><td>노션 출고 데이터를 읽어 <b>이번 달 기준치</b>(건수·거래처·박스·금액)를 고정합니다.</td><td>건수·박스·금액 숫자가 뜸</td></tr>';
+    h += '    <tr><td>1</td><td>세금계산서 DB</td><td>노션 세금계산서 DB에 이번 달 발행 대상 페이지를 만듭니다.</td><td>진행률 100%</td></tr>';
+    h += '    <tr><td>2</td><td>엑셀 초안</td><td>거래처별로 합산해 홈택스 엑셀업로드양식에 1차 기록합니다.</td><td>거래처 1행씩 보임</td></tr>';
+    h += '    <tr><td>E</td><td>예외 처리</td><td>보류·제외·수정발행·기발행을 등록합니다. <b>📌 예외발행 거래처</b>는 여기서 확인합니다.</td><td>등록 예외 리스트에 행이 쌓임</td></tr>';
+    h += '    <tr><td>3</td><td>최종 발행</td><td>예외를 모두 반영해 엑셀양식을 <b>최종</b>으로 다시 쓰고 장부를 남깁니다.</td><td>누락 검증이 모두 <code>=</code></td></tr>';
+    h += '    <tr><td>R</td><td>발행률 리포트</td><td>월/분기/반기/연도 발행률과 차액을 확인합니다.</td><td>표·차트 출력</td></tr>';
+    h += '  </tbody></table>';
+
+    h += '  <h4>1. 상단 버튼 — 이제 2줄로 나뉩니다 (v10.12 변경)</h4>';
+    h += '  <p><b>1줄(크고 진한 버튼 3개 + 노란 버튼 1개)</b>는 “자주 쓰고 중요한 기능”, ' +
+         '<b>2줄(작은 버튼 7개)</b>는 “단계 이동”입니다. 기능은 하나도 바뀌지 않았고 <b>위치와 색만</b> 정리했습니다.</p>';
+    h += '  <table><thead><tr><th>버튼</th><th>위치</th><th>설명</th></tr></thead><tbody>';
+    h += '    <tr><td><b>📌 예외발행 거래처</b></td><td>1줄 맨 앞 (노란색)</td><td>업체별 특이사항이 있는 거래처 명단을 등록·수정·삭제합니다. <b>이번 버전의 신규 기능</b>입니다.</td></tr>';
+    h += '    <tr><td><b>📊 컨트롤타워 시트 열기</b></td><td>1줄 (진한 네이비)</td><td>구글시트(장부·예외조정·발행이력)를 새 창으로 엽니다.</td></tr>';
+    h += '    <tr><td><b>모두 접기 / 펼치기</b></td><td>1줄 (진한 네이비)</td><td>화면의 6단계를 한 번에 접거나 폅니다.</td></tr>';
+    h += '    <tr><td><b>🔄 전체 새로고침</b></td><td>1줄 (파란색)</td><td>집계월은 그대로 두고 모든 세션을 다시 불러옵니다. <b>예외·고정거래처는 유지</b>됩니다.</td></tr>';
+    h += '    <tr><td><b>0 ~ R</b></td><td>2줄</td><td>해당 단계로 이동(그 단계만 펼쳐짐).</td></tr>';
+    h += '    <tr><td><b>📘 사용 매뉴얼</b></td><td>2줄 <b>맨 끝</b> (v10.12 이동)</td><td>지금 보고 있는 이 화면을 엽니다. 다른 단계 버튼과 같은 크기·색입니다.</td></tr>';
+    h += '  </tbody></table>';
+
+    h += '  <h4>2. 📌 예외발행 거래처 — 무엇이고, 무엇이 아닌가</h4>';
+    h += '  <p><b>무엇인가</b> : “이 거래처는 발행 방식이 남들과 다르다”는 사실을 <b>적어두는 공책</b>입니다. ' +
+         '거래처명 · 이슈 내용 · 사유 · 유형(4가지) · 발행비율을 저장합니다.</p>';
+    h += '  <div class="m12-warn">무엇이 <b>아닌가</b> : 이 명단은 <b>세금계산서 금액을 스스로 바꾸지 않습니다.</b> ' +
+         '자동 등록·자동 제외·자동 발행은 없습니다. 명단에 있다는 이유만으로 이번 달 발행에서 빠지지 않습니다. ' +
+         '실제 처리는 반드시 <b>[E 예외 처리]에서 사용자가 [예외 등록]을 눌러야</b> 반영됩니다. ' +
+         '기존 <b>📌 고정 거래처(거래처 전체 제외)</b> 목록과도 완전히 분리되어 있어 서로 영향을 주지 않습니다.</div>';
+    h += '  <p><b>등록하는 법</b></p>';
+    h += '  <ol>';
+    h += '    <li>상단 1줄 맨 앞 <b>[📌 예외발행 거래처]</b>를 누릅니다.</li>';
+    h += '    <li>[거래처명 검색] 칸에 이름을 입력하면 <b>노션 거래처 DB 전체</b>에서 후보가 뜹니다(이번 달 출고 거래처도 함께).</li>';
+    h += '    <li><b>유형</b>을 고릅니다 — ① 발행보류 ② 거래처 전체 제외 ③ 거래처 수정발행 ④ 기발행완료.</li>';
+    h += '    <li>③을 골랐다면 <b>발행비율</b>을 적습니다. <code>2/3</code>, <code>0.6667</code>, <code>66%</code> 모두 됩니다.</li>';
+    h += '    <li><b>이슈 내용 / 사유</b>를 적고 <b>[저장]</b>. 같은 거래처를 다시 저장하면 새 줄이 생기지 않고 그 줄이 갱신됩니다.</li>';
+    h += '  </ol>';
+    h += '  <p><b>이 명단이 화면에서 하는 일 — 노란색으로 구분</b></p>';
+    h += '  <ul>';
+    h += '    <li>등록한 거래처는 <b>0 출고 스냅샷 · 1 세금계산서 DB · 2 엑셀 초안 · E 예외 처리 · 3 최종 발행</b> 리스트에서 ' +
+         '<b>노란 음영 + 📌 표시</b>로 일반 거래처와 구분됩니다. (표시만 하며 계산에는 관여하지 않습니다)</li>';
+    h += '    <li><b>[① 패널에 채우기]</b> — ① 계산서 수정발행 입력칸(거래처·유형·발행비율·발행수량·발행금액)에 <b>값만 미리 채워</b> 줍니다. ' +
+         '채워진 값은 <b>그 자리에서 고칠 수 있고</b>, 마지막에 <b>[예외 등록]</b>을 눌러야 이번 달에 반영됩니다.</li>';
+    h += '  </ul>';
+
+    h += '  <h4>3. 예외 4가지 유형 — 언제 무엇을 쓰나</h4>';
+    h += '  <table><thead><tr><th>유형</th><th>이런 경우</th><th>입력</th><th>결과</th></tr></thead><tbody>';
+    h += '    <tr><td>① 발행보류</td><td>이번 달 발행을 잠시 미루고 다음 달 10일 전후에 확정</td><td>납품건 미선택=거래처 전체 보류 / 선택=부분 보류</td><td>박스·금액 발행 0, 발행률 미발행. 귀속월은 그대로</td></tr>';
+    h += '    <tr><td>② 거래처 전체 제외</td><td>이번 달은 이 거래처에 계산서를 아예 쓰지 않음</td><td>거래처명</td><td>그 거래처 전부 제외. 고정 거래처로 저장 가능</td></tr>';
+    h += '    <tr><td>③ 거래처 수정발행</td><td>일부만 발행 · 수량/금액을 다르게 발행</td><td>발행수량·발행금액·발행비율 중 <b>하나 이상</b></td><td>입력값 그대로 발행. 비율은 버림 계산</td></tr>';
+    h += '    <tr><td>④ 기발행완료</td><td>이미 손으로 계산서를 끊어 준 납품건이 있음</td><td>해당 납품건 체크(+수량·금액)</td><td>일괄발행에서 제외, 발행률에는 발행으로 반영</td></tr>';
+    h += '  </tbody></table>';
+
+    h += '  <h4>4. 발행비율 — 계산값이 메시지 칸에 나옵니다 (v10.12 수정)</h4>';
+    h += '  <p><b>[E 예외 처리] → ① 계산서 수정발행</b>에서 거래처를 고르면 그 거래처 단가와 함께 ' +
+         '<b>출고박스·출고금액</b>이 보입니다. 여기에 발행비율을 넣으면 <b>아래 메시지 칸에 실제 발행 박스와 금액이 계산되어</b> 표시됩니다.</p>';
+    h += '  <div class="m12-ok">예) 단가 140,000원 · 출고 25박스 / 3,500,000원 에서 비율 <code>2/3</code> 입력 →<br>' +
+         '· 발행수량 = 25 × 2/3 = 16.67 → <b>16박스</b> (버림)<br>' +
+         '· 발행금액 = 16박스 × 140,000원 = <b>2,240,000원</b><br>' +
+         '계산값은 참고용이며, 직접 고쳐서 등록해도 됩니다.</div>';
+
+    h += '  <h4>5. 매달 반복하는 체크리스트 (인쇄해서 붙여두세요)</h4>';
+    h += '  <ol>';
+    h += '    <li>집계월을 이번 달로 맞춘다.</li>';
+    h += '    <li><b>[📌 예외발행 거래처]</b>를 열어 <b>이번 달 특이 거래처가 모두 들어있는지</b> 확인한다. (신규 거래처 추가)</li>';
+    h += '    <li>[0 출고 스냅샷] 조회 → 건수·박스·금액을 <b>메모</b>한다 (마지막 누락 검증의 기준).</li>';
+    h += '    <li>[1 세금계산서 DB] 진단 → 실행. 남은 건은 자동으로 이어서 처리된다.</li>';
+    h += '    <li>[2 엑셀 초안] 미리보기 → 실행.</li>';
+    h += '    <li>[E 예외 처리] — <b>노란색 거래처를 위에서부터 하나씩</b> 처리. 보류는 [보류 통합 관리]에서 해소.</li>';
+    h += '    <li>[3 최종 발행] → <b>누락 검증이 전부 <code>=</code></b> 인지 확인. 하나라도 <code>≠</code>면 그 거래처를 다시 본다.</li>';
+    h += '    <li>엑셀 파일을 홈택스에 업로드.</li>';
+    h += '    <li>[R 발행률 리포트]로 월 발행률·차액 확인.</li>';
+    h += '  </ol>';
+
+    h += '  <h4>6. 자주 묻는 질문</h4>';
+    h += '  <table><thead><tr><th>질문</th><th>답</th></tr></thead><tbody>';
+    h += '    <tr><td>예외발행 거래처에 넣으면 이번 달 발행에서 자동으로 빠지나요?</td><td><b>아니요.</b> 표시만 됩니다. 실제 제외는 [E 예외 처리]에서 유형 ②로 <b>직접 등록</b>해야 합니다. 이중 안전장치입니다.</td></tr>';
+    h += '    <tr><td>고정 거래처와 예외발행 거래처가 겹치면?</td><td>서로 다른 목록입니다. 고정 거래처는 “매달 자동으로 제외 후보에 뜨는 목록”, 예외발행 거래처는 “주의 표시 명단”입니다. 겹쳐도 계산이 두 번 되지 않습니다.</td></tr>';
+    h += '    <tr><td>발행비율을 2/3로 넣었는데 16박스로 나옵니다.</td><td>정상입니다. 25 × 2/3 = 16.67 이고 <b>소수점 아래는 버립니다</b>(자연수 아랫값).</td></tr>';
+    h += '    <tr><td>[① 패널에 채우기]를 누르면 바로 발행되나요?</td><td>아니요. <b>값만 채워집니다.</b> 확인·수정 후 [예외 등록]을 눌러야 반영됩니다.</td></tr>';
+    h += '    <tr><td>지난달 보류 건은?</td><td>[E 예외 처리] → [보류 통합 관리]에서 실제 발행 금액을 넣으면 이번 달 엑셀에 포함되고 지난달 발행률도 함께 갱신됩니다.</td></tr>';
+    h += '    <tr><td>전체 새로고침을 누르면 예외가 지워지나요?</td><td>아니요. 예외·고정거래처·예외발행 거래처 명단은 모두 유지됩니다.</td></tr>';
+    h += '  </tbody></table>';
+
+    h += '  <h4>7. 안전 원칙 (이번 버전에서도 그대로)</h4>';
+    h += '  <ul>';
+    h += '    <li>모든 실행은 <b>끝까지 수행</b>되고, 경고는 결과에 ‘참고’로만 남습니다.</li>';
+    h += '    <li>집계월이 다른 달인 페이지는 <b>이월</b>로 분류되어 자동 제외(정상)됩니다.</li>';
+    h += '    <li>1단계가 6분을 넘길 것 같으면 <b>스스로 이어서 처리</b>하고, 끝나면 트리거를 지웁니다.</li>';
+    h += '    <li>시트 기록은 <b>항상 A7:BG140 범위만</b> 다시 씁니다(다른 칸은 건드리지 않음).</li>';
+    h += '  </ul>';
+    h += '  <p style="margin:0;color:#0F7A3D;font-weight:800">※ 이 매뉴얼 아래에 이전 버전(v9~v10.11)의 상세 설명이 그대로 남아 있습니다. 필요할 때만 펼쳐 보세요.</p>';
+    h += '</div>';
+    return h;
+  }
+
+  function render() {
+    var body = g('manualBody');
+    if (!body || g('m12Root')) return;
+    try { body.insertAdjacentHTML('afterbegin', build()); } catch (e) {}
+  }
+  render();
+  [300, 900, 2000, 4500].forEach(function (ms) { setTimeout(render, ms); });
+  try {
+    if (g('manualBody')) new MutationObserver(render).observe(g('manualBody'), { childList: true });
+  } catch (e) {}
+})();
+</script>
+
