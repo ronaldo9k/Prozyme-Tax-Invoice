@@ -334,7 +334,7 @@ td.xc-cell::after{content:" 📌";font-size:10.5px;font-weight:900;color:#B45309
     <div class="brand">
       <div class="brand-mark">PZ</div>
       <div class="brand-txt">
-        <h1>세금계산서 컨트롤 타워 <span style="font-size:11px;color:#8FE3B4">v9.9</span></h1>
+        <h1>세금계산서 컨트롤 타워 <span style="font-size:11px;color:#8FE3B4">v10.0 최종</span></h1>
         <p>노션 출고 → 세금계산서 DB → 홈택스 엑셀양식 → 발행률·차액</p>
       </div>
     </div>
@@ -642,7 +642,7 @@ td.xc-cell::after{content:" 📌";font-size:10.5px;font-weight:900;color:#B45309
   </div>
 
   <p class="foot">
-    푸로찜 에스 · 세금계산서 컨트롤 타워 v9.9<br>
+    푸로찜 에스 · 세금계산서 컨트롤 타워 v10.0 최종<br>
     1단계는 서버가 자동으로 이어서 처리합니다(6분 제한 근본 해결). 처음엔 “진단”으로 숫자를 확인한 뒤 실행하세요.
   </p>
 </main>
@@ -662,7 +662,7 @@ td.xc-cell::after{content:" 📌";font-size:10.5px;font-weight:900;color:#B45309
 /* =====================================================================
  * 배포한 GAS 웹앱 URL (/exec 로 끝나야 함)
  * ===================================================================== */
-const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx3Nk5eHS14D10W8OhAc7zzh9SVrs2Zy81h-aiZHc5_psVHF4GFmcbBJRYQlHfMzlyK/exec';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwNZ2LK2M7L_Eqtpi0bbL-PZ5N9t2-qcgNWjZDBPivCy68eXOKuNq9Fry7xaTLdNH4L/exec';
 /* [v7.1 SPEED] 서버가 배치를 '4분 안쪽'에 확정 응답하도록 바뀌었습니다.
    기존 360초(6분) 대기는 실패한 요청을 6분씩 붙잡고 있었습니다 → 300초로 단축. */
 const TIMEOUT_MS = 300000;
@@ -3294,6 +3294,7 @@ loadExceptions(true);
 })();
 </script>
 
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
@@ -7565,6 +7566,122 @@ loadExceptions(true);
   [300, 900, 2000, 4500].forEach(function (ms) { setTimeout(render, ms); });
   try {
     if (g('manualBody')) new MutationObserver(render).observe(g('manualBody'), { childList: true });
+  } catch (e) {}
+})();
+</script>
+
+<!-- ============================================================================
+     [v10.0 최종] 사용 매뉴얼 — 공급자 종사업장번호(D열) 자동 연동 (ADD-ONLY)
+     · 기존 manualBody 내용은 그대로 두고, 이 블록만 '맨 위'에 붙습니다.
+     · 노션 업로드용 파일과 같은 내용입니다.
+     ========================================================================== -->
+<style>
+.tm-wrap{border:2px solid #0F2D5A;border-radius:14px;background:#FBFCFE;padding:14px 16px;margin:0 0 18px}
+.tm-wrap .tm-vis{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.tm-wrap .tm-ver{font-size:11px;font-weight:900;padding:2px 9px;border-radius:999px;background:#0F2D5A;color:#fff}
+.tm-wrap .tm-new{font-size:11px;font-weight:900;padding:2px 9px;border-radius:999px;background:#FFF1D6;color:#8A4B08;border:1px solid #F2CF8B}
+.tm-wrap h4{margin:15px 0 6px;font-size:13px;font-weight:900;color:#0F2D5A;border-left:4px solid #1E5EFF;padding-left:8px}
+.tm-wrap p{margin:0 0 8px;font-size:12.2px;color:#334155;line-height:1.78}
+.tm-wrap table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0 10px}
+.tm-wrap th{background:#F1F5F9;color:#334155;font-weight:900;padding:7px 9px;border:1px solid #E2E8F0;text-align:left}
+.tm-wrap td{padding:7px 9px;border:1px solid #E2E8F0;vertical-align:top;line-height:1.72}
+.tm-wrap ol,.tm-wrap ul{margin:6px 0 10px 18px;padding:0;font-size:12.2px;color:#334155;line-height:1.85}
+.tm-wrap code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#EEF2F7;border-radius:4px;padding:1px 5px}
+.tm-wrap .tm-ok{background:#E9F7EF;border:1px solid #A7E0BF;border-radius:10px;padding:9px 11px;font-size:12px;color:#0F5E30;font-weight:700;line-height:1.75}
+.tm-wrap .tm-warn{background:#FFF7E8;border:1px solid #F2CF8B;border-radius:10px;padding:9px 11px;font-size:12px;color:#7C3A06;font-weight:700;line-height:1.75}
+</style>
+<script>
+(function () {
+  'use strict';
+  if (window.__tmFinalManual) return;
+  window.__tmFinalManual = true;
+
+  function build() {
+    var h = '';
+    h += '<div class="tm-wrap" id="tmRoot">';
+    h += '  <div class="tm-vis"><span class="tm-ver">v10.0 최종</span>';
+    h += '    <span class="tm-new">새 기능 1개 · 공급자 종사업장번호(D열) 자동 연동</span>';
+    h += '    <b style="font-size:13px;color:#0F2D5A">사용 매뉴얼 (집대성 · 최종)</b></div>';
+
+    h += '<p>이번 버전에서 새로 생긴 것은 <b>딱 하나</b>입니다. 「엑셀업로드양식」 시트 <b>D열(공급자 종사업장번호)</b>에 '
+      + '법인 거래처의 4자리 사업장 번호(예: <code>0004</code>)가 <b>자동으로</b> 채워집니다. '
+      + '값이 없는 거래처는 지금과 똑같이 <b>빈칸</b>입니다. 나머지 기능은 한 개도 바뀌지 않았습니다.</p>';
+
+    h += '<h4>1. 요청 → 개선, 1:1 대응표</h4>';
+    h += '<table><thead><tr><th style="width:34%">내가 요청한 것</th><th>이렇게 했습니다</th></tr></thead><tbody>';
+    h += '<tr><td>거래처 DB에 저장해 둔 종사업장번호가 엑셀업로드양식 <b>D열</b>에 자동으로 나와야 한다</td>'
+      + '<td>거래처 DB에 <code>종사업장번호</code> 속성을 하나 만들면, 세금계산서 자동화 GAS와 컨트롤 타워 <b>두 곳 모두</b>가 '
+      + '그 값을 읽어 D열에 넣습니다. 항상 <b>4자리 글자</b>로 저장합니다(텍스트 서식). 그래서 <code>0004</code>의 앞의 0이 사라지지 않습니다.</td></tr>';
+    h += '<tr><td>「예외발행 거래처」 기능과는 엮지 말 것</td>'
+      + '<td>전혀 엮지 않았습니다. 예외발행 거래처의 명단·계산·화면은 <b>한 줄도 건드리지 않았고</b>, '
+      + 'D열은 오직 <b>거래처 DB → 종사업장번호</b> 값만 봅니다. 아주 단순한 기능 하나로 끝냈습니다.</td></tr>';
+    h += '</tbody></table>';
+
+    h += '<h4>2. 노션에서 준비할 것 (5분, 한 번만 하면 끝)</h4>';
+    h += '<ol>';
+    h += '  <li><b>거래처 DB</b>를 엽니다.</li>';
+    h += '  <li>맨 오른쪽 <b>[+ 열 추가]</b> 누르고, 이름을 <b>공급자 종사업장번호</b> 로 입력합니다. '
+      + '(<code>종사업장번호</code>·<code>공급자종사업장번호</code>도 자동으로 알아보지만, 위 이름이 가장 안전합니다.)</li>';
+    h += '  <li>속성 종류는 반드시 <b>텍스트</b>로 지정합니다. <b>숫자로 만들면 <code>0004</code>가 <code>4</code>가 되어 앞의 0이 사라집니다.</b></li>';
+    h += '  <li>D열이 필요한 <b>법인 거래처만</b> 그 칸에 <code>0004</code>처럼 <b>4자리</b>를 적습니다. 나머지는 <b>비워 둡니다.</b></li>';
+    h += '  <li>(선택) <b>세금계산서 DB</b>에도 같은 이름 <b>공급자 종사업장번호</b> 속성을 하나 추가하면, 1단계가 그 값을 페이지에 복사해 둡니다. '
+      + '없어도 괜찮습니다 — 없으면 2단계가 거래처 DB에서 직접 읽습니다.</li>';
+    h += '</ol>';
+    h += '<div class="tm-warn">거래처 DB의 <b>「거래처」(제목)</b> 값이 입출고 DB의 <b>거래처(관계형)</b> 이름과 같아야 찾습니다. '
+      + '이미 1~3단계가 정상 동작 중이라면 이 연결은 이미 맞아 있는 상태입니다.</div>';
+
+    h += '  <h4>3. 매달 하는 순서 — 이전과 100% 동일</h4>';
+    h += '  <table><thead><tr><th>단계</th><th>버튼</th><th>하는 일</th><th>끝났는지 확인</th></tr></thead><tbody>';
+    h += '    <tr><td>준비</td><td>집계월 선택</td><td>이번 달 업무 기준월을 고릅니다.</td><td>상단 우측 집계월 값</td></tr>';
+    h += '    <tr><td>0</td><td>출고 스냅샷</td><td>노션 출고 데이터를 읽어 이번 달 기준치를 고정합니다.</td><td>건수·박스·금액이 뜸</td></tr>';
+    h += '    <tr><td>1</td><td>세금계산서 DB</td><td>세금계산서 DB에 이번 달 발행 대상 페이지를 만듭니다.</td><td>진행률 100%</td></tr>';
+    h += '    <tr><td>2</td><td>엑셀 초안</td><td>거래처별로 합산해 엑셀업로드양식에 1차 기록합니다. <b>D열도 여기서 채워집니다.</b></td><td>거래처 1행씩 보임</td></tr>';
+    h += '    <tr><td>E</td><td>예외 처리</td><td>보류·제외·수정발행·기발행을 등록합니다.</td><td>예외 리스트에 행이 쌓임</td></tr>';
+    h += '    <tr><td>3</td><td>최종 발행</td><td>예외를 모두 반영해 엑셀양식을 최종으로 다시 씁니다. <b>D열도 다시 채워집니다.</b></td><td>누락 검증이 모두 <code>=</code></td></tr>';
+    h += '    <tr><td>R</td><td>발행률 리포트</td><td>월/분기/반기/연도 발행률과 차액을 봅니다.</td><td>표·차트 출력</td></tr>';
+    h += '  </tbody></table>';
+
+    h += '<h4>4. D열이 제대로 들어갔는지 확인하는 3가지 방법</h4>';
+    h += '<ul>';
+    h += '  <li><b>웹앱에서</b> — [2 엑셀 초안] → [엑셀 기록 확인] 표에서 그 거래처 행의 <b>사업자번호 옆 칸</b>에 <code>0004</code>가 보이면 성공입니다.</li>';
+    h += '  <li><b>구글시트에서</b> — 「엑셀업로드양식」 시트 <b>D7</b> 칸을 클릭했을 때 입력창에 <code>\'0004</code>처럼 <b>앞에 작은 따옴표</b>가 보이면 '
+      + '“글자로 저장됨”이라는 표시입니다(홈택스 업로드에 문제 없음).</li>';
+    h += '  <li><b>홈택스에서</b> — 업로드 후 <b>미리보기</b> 화면의 종사업장번호 칸에 <code>0004</code>가 보이면 끝입니다.</li>';
+    h += '</ul>';
+    h += '<div class="tm-ok">D열이 <b>빈칸</b>으로 나왔다면, ① 거래처 DB 속성 이름이 맞는지 ② 속성이 <b>텍스트</b>인지 '
+      + '③ 그 거래처 칸에 값이 실제로 들어 있는지 — 이 세 가지만 보면 됩니다.</div>';
+
+    h += '<h4>5. 이번 버전의 안전 원칙</h4>';
+    h += '<ul>';
+    h += '  <li>기존 계산·합산·예외·발행률 로직은 <b>하나도 바꾸지 않았습니다.</b> 새 함수만 <b>추가</b>했습니다.</li>';
+    h += '  <li>종사업장번호 속성이 <b>없거나 비어 있으면</b> D열은 <b>빈칸</b> — 예전과 100% 같은 결과입니다.</li>';
+    h += '  <li>D열을 쓰다가 문제가 생겨도 <b>기존 실행은 절대 멈추지 않습니다.</b>(그 칸만 비고 나머지는 정상 기록)</li>';
+    h += '  <li>시트 기록 범위는 늘 그대로 <b>A7:BG(마지막 행)</b>만 다시 씁니다. 다른 칸은 건드리지 않습니다.</li>';
+    h += '</ul>';
+
+    h += '<h4>6. 자주 묻는 질문</h4>';
+    h += '<table><thead><tr><th style="width:46%">질문</th><th>답</th></tr></thead><tbody>';
+    h += '<tr><td>종사업장번호가 없는 거래처는 어떻게 되나요?</td><td>D열이 <b>빈칸</b>입니다. 지금까지와 똑같습니다.</td></tr>';
+    h += '<tr><td>중간에 값을 바꾸면 언제 반영되나요?</td><td>다음 <b>[2 엑셀 초안]</b> 또는 <b>[3 최종 발행]</b> 때 자동 반영됩니다. 코드를 다시 고칠 필요 없습니다.</td></tr>';
+    h += '<tr><td>「예외발행 거래처」에 넣어야 하나요?</td><td><b>아니요.</b> 아무 상관 없습니다. 거래처 DB 값만 채우면 끝입니다.</td></tr>';
+    h += '<tr><td>예전에 만든 발행 건은요?</td><td>지난 달 발행분은 그대로 둡니다. 이번 달부터 새로 쓰이는 시트에만 적용됩니다.</td></tr>';
+    h += '</tbody></table>';
+
+    h += '</div>';
+    return h;
+  }
+
+  function render() {
+    var body = document.getElementById('manualBody');
+    if (!body || document.getElementById('tmRoot')) return;
+    try { body.insertAdjacentHTML('afterbegin', build()); } catch (e) {}
+  }
+  render();
+  [300, 900, 2000, 4500].forEach(function (ms) { setTimeout(render, ms); });
+  try {
+    if (document.getElementById('manualBody')) {
+      new MutationObserver(render).observe(document.getElementById('manualBody'), { childList: true });
+    }
   } catch (e) {}
 })();
 </script>
